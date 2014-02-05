@@ -16,7 +16,7 @@
 #include <opencv2/opencv.hpp>
 
 
-namespace Processors {
+namespace Sources {
 namespace CameraPGR {
 
 /*!
@@ -67,21 +67,21 @@ protected:
 	bool onStop();
 
 
-// Input data streams
+	// Input data streams
+	Base::DataStreamIn<float> shutterTimeChange;
 
-		Base::DataStreamIn<float> shutterTimeChange;
+	// Output data streams
+	Base::DataStreamOut<cv::Mat> out_img;
+	Base::DataStreamOut<Types::CameraInfo> out_info;
 
-// Output data streams
-
-		Base::DataStreamOut<cv::Mat> out_img;
-		Base::DataStreamOut<Types::CameraInfo> out_info;
 	// Handlers
 	Base::EventHandler2 h_onShutterTimeChanged;
-		Base::Property<int> width;
-		Base::Property<int> height;
-		Base::Property<float> fps;
-		Base::Property<float> shutter;
-		Base::Property<int> gain;
+	// Properties
+	Base::Property<int> width;
+	Base::Property<int> height;
+	Base::Property<float> fps;
+	Base::Property<float> shutter;
+	Base::Property<int> gain;
 
 	
 	// Handlers
@@ -90,11 +90,11 @@ protected:
 };
 
 } //: namespace CameraPGR
-} //: namespace Processors
+} //: namespace Sources
 
 /*
  * Register processor component.
  */
-REGISTER_COMPONENT("CameraPGR", Processors::CameraPGR::CameraPGR)
+REGISTER_COMPONENT("CameraPGR", Sources::CameraPGR::CameraPGR)
 
 #endif /* CAMERAPGR_HPP_ */

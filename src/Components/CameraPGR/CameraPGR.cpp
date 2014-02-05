@@ -12,7 +12,7 @@
 
 #include <boost/bind.hpp>
 
-namespace Processors {
+namespace Sources {
 namespace CameraPGR {
 
 CameraPGR::CameraPGR(const std::string & name) :
@@ -35,9 +35,9 @@ CameraPGR::~CameraPGR() {
 
 void CameraPGR::prepareInterface() {
 	// Register data streams, events and event handlers HERE!
-registerStream("shutterTimeChange", &shutterTimeChange);
-registerStream("out_img", &out_img);
-registerStream("out_info", &out_info);
+	registerStream("shutterTimeChange", &shutterTimeChange);
+	registerStream("out_img", &out_img);
+	registerStream("out_info", &out_info);
 	// Register handlers
 	h_onShutterTimeChanged.setup(boost::bind(&CameraPGR::onShutterTimeChanged, this));
 	registerHandler("onShutterTimeChanged", &h_onShutterTimeChanged);
@@ -68,4 +68,4 @@ void CameraPGR::onShutterTimeChanged() {
 
 
 } //: namespace CameraPGR
-} //: namespace Processors
+} //: namespace Sources
