@@ -25,17 +25,17 @@ namespace CameraPGR {
  *
  * CameraPGR processor.
  */
-class CameraPGR: public Base::Component {
+class CameraPGR_Source: public Base::Component {
 public:
 	/*!
 	 * Constructor.
 	 */
-	CameraPGR(const std::string & name = "CameraPGR");
+	CameraPGR_Source(const std::string & name = "CameraPGR");
 
 	/*!
 	 * Destructor
 	 */
-	virtual ~CameraPGR();
+	virtual ~CameraPGR_Source();
 
 	/*!
 	 * Prepare components interface (register streams and handlers).
@@ -82,11 +82,16 @@ protected:
 	Base::Property<float> fps;
 	Base::Property<float> shutter;
 	Base::Property<int> gain;
+	Base::Property<string> camera_url;
 
 	
 	// Handlers
 	void onShutterTimeChanged();
-
+private:
+	FlyCapture2::GigECamera cam;
+    FlyCapture2::Image rawImage;  
+    FlyCapture2::Image convertedImage;
+    boost::thread image_thread;
 };
 
 } //: namespace CameraPGR
