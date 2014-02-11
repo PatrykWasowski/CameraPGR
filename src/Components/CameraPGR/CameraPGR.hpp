@@ -66,13 +66,12 @@ protected:
 	 */
 	bool onStop();
 
-
 	// Input data streams
 	Base::DataStreamIn<float> shutterTimeChange;
 
 	// Output data streams
 	Base::DataStreamOut<cv::Mat> out_img;
-	Base::DataStreamOut<Types::CameraInfo> out_info;
+	Base::DataStreamOut<string> out_info;
 
 	// Handlers
 	Base::EventHandler2 h_onShutterTimeChanged;
@@ -83,14 +82,15 @@ protected:
 	Base::Property<float> shutter;
 	Base::Property<int> gain;
 	Base::Property<string> camera_url;
+	Base::Property<string> camera_serial;
 
-	
+	void sendCameraInfo();
 	// Handlers
 	void onShutterTimeChanged();
+	
 private:
 	FlyCapture2::GigECamera cam;
-    FlyCapture2::Image rawImage;  
-    FlyCapture2::Image convertedImage;
+	FlyCapture2::CameraInfo camInfo;
     boost::thread image_thread;
 };
 

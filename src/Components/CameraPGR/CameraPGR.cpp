@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <sstream>
 
 #include "CameraPGR.hpp"
 #include "Common/Logger.hpp"
@@ -22,7 +23,8 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		fps("fps", 10), 
 		shutter("shutter", 60), 
 		gain("gain", 0),
-		camera_url("camera_url", "") 
+		camera_url("camera_url", "")
+		camera_serial("camera_serial", "") 
 		/* Camera properties:
 		 * BRIGHTNESS
 		 * AUTO_EXPOSURE
@@ -49,15 +51,19 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		registerProperty(shutter);
 		registerProperty(gain);
 		registerProperty(camera_url);
+		registerProperty(camera_serial);
 		
 		// TODO odzyskiwanie guid i wybór więcej niż jednej kamery
 		FlyCapture2::Error error;
 		FlyCapture2::BusManager busMgr;
       
 		FlyCapture2::PGRGuid guid;
-		error = busMgr.GetCameraFromSerialNumber(serial, &guid);
+		if(camera_serial != "")
+			error = busMgr.GetCameraFromSerialNumber(serial, &guid);
       
 		// Connect to a camera
+		// According to documentation when guid is null it should connect to first found camera.
+		// Now, the  question is: is guid in this case null? Need to check.
 		error = cam.Connect(&guid);
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
@@ -66,15 +72,13 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		}
       
 		// Get the camera information
-		FlyCapture2::CameraInfo camInfo;
+		// This is held as a member of the class
 		error = cam.GetCameraInfo(&camInfo);
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
 			PrintError( error );
 			return -1;
 		}
-
-		//PrintCameraInfo(&camInfo);
 
 		FlyCapture2::GigEImageSettingsInfo imageSettingsInfo;
 		error = cam.GetGigEImageSettingsInfo( &imageSettingsInfo );
@@ -89,8 +93,8 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		imageSettings.offsetY = 0;
 		imageSettings.height = height;
 		imageSettings.width = width;
-		imageSettings.pixelFormat = FlyCapture2::PIXEL_FORMAT_RAW8;
-								//  FlyCapture2::PIXEL_FORMAT_RGB8?
+		imageSettings.pixelFormat = FlyCapture2::PIXEL_FORMAT_RGB8;
+								//  FlyCapture2::PIXEL_FORMAT_RAW8?
 
 		printf( "Setting GigE image settings...\n" );
 
@@ -109,8 +113,7 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 			return -1;
 		}
 		ok = true;
-		image_thread = boost::thread(boost::bind(&Camera::feedImages, this));
-
+		image_thread = boost::thread(boost::bind(&CameraPGR_Source::captureAndSendImages, this));
 }
 
 CameraPGR_Source::~CameraPGR_Source() {
@@ -147,8 +150,14 @@ bool CameraPGR_Source::onStop() {
 }
 
 bool CameraPGR_Source::onStart() {
-	LOG(LINFO) << "CameraPGR_Source::stop()\n";
-	/*char macAddress[64];
+	LOG(LINFO) << "CameraPGR_Source::start()\n";
+	sendInfo();
+	return true;
+}
+
+void CameraPGR_Source::sendCameraInfo() {
+	std::stringstream ss;
+	char macAddress[64];
     sprintf( 
         macAddress, 
         "%02X:%02X:%02X:%02X:%02X:%02X", 
@@ -185,47 +194,75 @@ bool CameraPGR_Source::onStart() {
         pCamInfo->defaultGateway.octets[1],
         pCamInfo->defaultGateway.octets[2],
         pCamInfo->defaultGateway.octets[3]);
+        
+	ss << "\n*** CAMERA INFORMATION ***\n"
+	   << "Serial number - " << pCamInfo->serialNumber << "\n"
+	   << "Camera model - " << pCamInfo->modelName << "\n"
+	   << "Sensor - " << pCamInfo->sensorInfo << "\n"
+	   << "Resolution - " << pCamInfo->sensorResolution << "\n"
+       << "Firmware version - " << pCamInfo->firmwareVersion << "\n"
+       << "Firmware build time - " << pCamInfo->firmwareBuildTime << "\n"
+       << "GigE version - " << pCamInfo->gigEMajorVersion << "." << pCamInfo->gigEMinorVersion << "\n"
+       << "User defined name - " << pCamInfo->userDefinedName << "\n"
+       << "XML URL 1 - " << pCamInfo->xmlURL1 << "\n"
+       << "XML URL 2 - " << pCamInfo->xmlURL2 << "\n"
+       << "MAC address - " << macAddress << "\n"
+       << "IP address - " << ipAddress << "\n"
+       << "Subnet mask - " << subnetMask << "\n"
+       << "Default gateway - " << defaultGateway << "\n\n";
+    //TODO dopisać wypisanie aktualnego configa
+    out_info.write(ss.str());
+}
 
-    printf(
-        "\n*** CAMERA INFORMATION ***\n"
-        "Serial number - %u\n"
-        "Camera model - %s\n"
-        "Camera vendor - %s\n"
-        "Sensor - %s\n"
-        "Resolution - %s\n"
-        "Firmware version - %s\n"
-        "Firmware build time - %s\n"
-        "GigE version - %u.%u\n"
-        "User defined name - %s\n"
-        "XML URL 1 - %s\n"
-        "XML URL 2 - %s\n"
-        "MAC address - %s\n"
-        "IP address - %s\n"
-        "Subnet mask - %s\n"
-        "Default gateway - %s\n\n",
-        pCamInfo->serialNumber,
-        pCamInfo->modelName,
-        pCamInfo->vendorName,
-        pCamInfo->sensorInfo,
-        pCamInfo->sensorResolution,
-        pCamInfo->firmwareVersion,
-        pCamInfo->firmwareBuildTime,
-        pCamInfo->gigEMajorVersion,
-        pCamInfo->gigEMinorVersion,
-        pCamInfo->userDefinedName,
-        pCamInfo->xmlURL1,
-        pCamInfo->xmlURL2,
-        macAddress,
-        ipAddress,
-        subnetMask,
-        defaultGateway );*/
-	return true;
+void CameraPGR_Source::captureAndSendImages() {
+	cv::Mat img;
+	FlyCapture2::Image image;
+      FlyCapture2::Error error;
+      unsigned int pair_id = 0;
+      while (ok) {
+        //unsigned char *img_frame = NULL;
+        //uint32_t bytes_used;
+
+        // Retrieve an image
+        error = cam.RetrieveBuffer( &image );
+        if (error != FlyCapture2::PGRERROR_OK)
+        {
+//            PrintError( error );
+            continue;
+        }
+        
+        unsigned int rowBytes = (double) image.GetReceivedDataSize() / (double) image.GetRows();
+        img = cv::Mat(image.GetRows(), image.GetCols(), CV_8UC3, image.GetData(), rowBytes);
+        
+        out_img.write(img);
+        //timestamp?
+        /*ImagePtr image(new Image);
+        
+        image->height = convertedImage.GetRows();
+        image->width = convertedImage.GetCols();
+        image->step = convertedImage.GetStride();
+        image->encoding = image_encodings::RGB8;
+
+        image->header.stamp = capture_time;
+        image->header.seq = pair_id;
+
+        image->header.frame_id = frame;
+  
+        int data_size = convertedImage.GetDataSize();
+
+        image->data.resize(data_size);
+
+        memcpy(&image->data[0], convertedImage.GetData(), data_size);
+
+        pub.publish(image);
+
+        sendInfo(image, capture_time);*/
+      }
 }
 
 void CameraPGR_Source::onShutterTimeChanged() {
+	//todo zmiana configa (i nazwy metody...)
 }
-
-
 
 } //: namespace CameraPGR
 } //: namespace Sources
