@@ -15,6 +15,13 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <boost/thread.hpp>
+//FlyCapture2 imports
+#include <FlyCapture2.h>
+#include <GigECamera.h>
+#include <BusManager.h>
+#include <Image.h>
+
 
 namespace Sources {
 namespace CameraPGR {
@@ -66,6 +73,8 @@ protected:
 	 */
 	bool onStop();
 
+	void captureAndSendImages();
+
 	// Input data streams
 	Base::DataStreamIn<float> shutterTimeChange;
 
@@ -82,16 +91,17 @@ protected:
 	Base::Property<float> shutter;
 	Base::Property<int> gain;
 	Base::Property<string> camera_url;
-	Base::Property<string> camera_serial;
+	Base::Property<unsigned int> camera_serial;
 
 	void sendCameraInfo();
 	// Handlers
 	void onShutterTimeChanged();
 	
 private:
+	bool ok;
 	FlyCapture2::GigECamera cam;
 	FlyCapture2::CameraInfo camInfo;
-    boost::thread image_thread;
+    	boost::thread image_thread;
 };
 
 } //: namespace CameraPGR
@@ -100,6 +110,6 @@ private:
 /*
  * Register processor component.
  */
-REGISTER_COMPONENT("CameraPGR", Sources::CameraPGR::CameraPGR)
+REGISTER_COMPONENT("CameraPGR", Sources::CameraPGR::CameraPGR_Source)
 
 #endif /* CAMERAPGR_HPP_ */

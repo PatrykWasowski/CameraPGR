@@ -12,6 +12,11 @@
 #include "Common/Logger.hpp"
 
 #include <boost/bind.hpp>
+//FlyCapture2 imports
+//#include <FlyCapture2.h>
+//#include <GigECamera.h>
+//#include <BusManager.h>
+//#include <Image.h>
 
 namespace Sources {
 namespace CameraPGR {
@@ -23,8 +28,8 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		fps("fps", 10), 
 		shutter("shutter", 60), 
 		gain("gain", 0),
-		camera_url("camera_url", "")
-		camera_serial("camera_serial", "") 
+		camera_url("camera_url", string("null")),
+		camera_serial("camera_serial", 0) 
 		/* Camera properties:
 		 * BRIGHTNESS
 		 * AUTO_EXPOSURE
@@ -58,8 +63,8 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		FlyCapture2::BusManager busMgr;
       
 		FlyCapture2::PGRGuid guid;
-		if(camera_serial != "")
-			error = busMgr.GetCameraFromSerialNumber(serial, &guid);
+		if(camera_serial != 0)
+			error = busMgr.GetCameraFromSerialNumber(camera_serial, &guid);
       
 		// Connect to a camera
 		// According to documentation when guid is null it should connect to first found camera.
@@ -67,8 +72,8 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		error = cam.Connect(&guid);
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
-			PrintError( error );
-			return -1;
+			//LOG(LERROR) <<  error;
+			//return -1;
 		}
       
 		// Get the camera information
@@ -76,16 +81,16 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		error = cam.GetCameraInfo(&camInfo);
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
-			PrintError( error );
-			return -1;
+			//LOG(LERROR) << error;
+			//return -1;
 		}
 
 		FlyCapture2::GigEImageSettingsInfo imageSettingsInfo;
 		error = cam.GetGigEImageSettingsInfo( &imageSettingsInfo );
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
-			PrintError( error );
-			return -1;
+			//LOG(LERROR) << error;
+			//return -1;
 		}
 
 		FlyCapture2::GigEImageSettings imageSettings;
@@ -101,16 +106,16 @@ CameraPGR_Source::CameraPGR_Source(const std::string & name) :
 		error = cam.SetGigEImageSettings( &imageSettings );
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
-			PrintError( error );
-			return -1;
+			//LOG(LERROR) << error;
+			//return -1;
 		}
 
 		/* and turn on the streamer */
 		error = cam.StartCapture();
 		if (error != FlyCapture2::PGRERROR_OK)
 		{
-			PrintError( error );
-			return -1;
+			//LOG(LERROR) << error;
+			//return -1;
 		}
 		ok = true;
 		image_thread = boost::thread(boost::bind(&CameraPGR_Source::captureAndSendImages, this));
@@ -151,7 +156,7 @@ bool CameraPGR_Source::onStop() {
 
 bool CameraPGR_Source::onStart() {
 	LOG(LINFO) << "CameraPGR_Source::start()\n";
-	sendInfo();
+	sendCameraInfo();
 	return true;
 }
 
@@ -161,51 +166,51 @@ void CameraPGR_Source::sendCameraInfo() {
     sprintf( 
         macAddress, 
         "%02X:%02X:%02X:%02X:%02X:%02X", 
-        pCamInfo->macAddress.octets[0],
-        pCamInfo->macAddress.octets[1],
-        pCamInfo->macAddress.octets[2],
-        pCamInfo->macAddress.octets[3],
-        pCamInfo->macAddress.octets[4],
-        pCamInfo->macAddress.octets[5]);
+        camInfo.macAddress.octets[0],
+        camInfo.macAddress.octets[1],
+        camInfo.macAddress.octets[2],
+        camInfo.macAddress.octets[3],
+        camInfo.macAddress.octets[4],
+        camInfo.macAddress.octets[5]);
 
     char ipAddress[32];
     sprintf( 
         ipAddress, 
         "%u.%u.%u.%u", 
-        pCamInfo->ipAddress.octets[0],
-        pCamInfo->ipAddress.octets[1],
-        pCamInfo->ipAddress.octets[2],
-        pCamInfo->ipAddress.octets[3]);
+        camInfo.ipAddress.octets[0],
+        camInfo.ipAddress.octets[1],
+        camInfo.ipAddress.octets[2],
+        camInfo.ipAddress.octets[3]);
 
     char subnetMask[32];
     sprintf( 
         subnetMask, 
         "%u.%u.%u.%u", 
-        pCamInfo->subnetMask.octets[0],
-        pCamInfo->subnetMask.octets[1],
-        pCamInfo->subnetMask.octets[2],
-        pCamInfo->subnetMask.octets[3]);
+        camInfo.subnetMask.octets[0],
+        camInfo.subnetMask.octets[1],
+        camInfo.subnetMask.octets[2],
+        camInfo.subnetMask.octets[3]);
 
     char defaultGateway[32];
     sprintf( 
         defaultGateway, 
         "%u.%u.%u.%u", 
-        pCamInfo->defaultGateway.octets[0],
-        pCamInfo->defaultGateway.octets[1],
-        pCamInfo->defaultGateway.octets[2],
-        pCamInfo->defaultGateway.octets[3]);
+        camInfo.defaultGateway.octets[0],
+        camInfo.defaultGateway.octets[1],
+        camInfo.defaultGateway.octets[2],
+        camInfo.defaultGateway.octets[3]);
         
 	ss << "\n*** CAMERA INFORMATION ***\n"
-	   << "Serial number - " << pCamInfo->serialNumber << "\n"
-	   << "Camera model - " << pCamInfo->modelName << "\n"
-	   << "Sensor - " << pCamInfo->sensorInfo << "\n"
-	   << "Resolution - " << pCamInfo->sensorResolution << "\n"
-       << "Firmware version - " << pCamInfo->firmwareVersion << "\n"
-       << "Firmware build time - " << pCamInfo->firmwareBuildTime << "\n"
-       << "GigE version - " << pCamInfo->gigEMajorVersion << "." << pCamInfo->gigEMinorVersion << "\n"
-       << "User defined name - " << pCamInfo->userDefinedName << "\n"
-       << "XML URL 1 - " << pCamInfo->xmlURL1 << "\n"
-       << "XML URL 2 - " << pCamInfo->xmlURL2 << "\n"
+	   << "Serial number - " << camInfo.serialNumber << "\n"
+	   << "Camera model - " << camInfo.modelName << "\n"
+	   << "Sensor - " << camInfo.sensorInfo << "\n"
+	   << "Resolution - " << camInfo.sensorResolution << "\n"
+       << "Firmware version - " << camInfo.firmwareVersion << "\n"
+       << "Firmware build time - " << camInfo.firmwareBuildTime << "\n"
+       << "GigE version - " << camInfo.gigEMajorVersion << "." << camInfo.gigEMinorVersion << "\n"
+       << "User defined name - " << camInfo.userDefinedName << "\n"
+       << "XML URL 1 - " << camInfo.xmlURL1 << "\n"
+       << "XML URL 2 - " << camInfo.xmlURL2 << "\n"
        << "MAC address - " << macAddress << "\n"
        << "IP address - " << ipAddress << "\n"
        << "Subnet mask - " << subnetMask << "\n"
