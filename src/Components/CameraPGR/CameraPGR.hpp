@@ -22,7 +22,6 @@
 #include <BusManager.h>
 #include <Image.h>
 
-
 namespace Sources {
 namespace CameraPGR {
 
@@ -92,16 +91,17 @@ protected:
 	Base::Property<int> gain;
 	Base::Property<string> camera_url;
 	Base::Property<unsigned int> camera_serial;
+	Base::Property<string> pixel_format;
 
 	void sendCameraInfo();
 	// Handlers
 	void onShutterTimeChanged();
-	
+
 private:
 	bool ok;
 	FlyCapture2::GigECamera cam;
 	FlyCapture2::CameraInfo camInfo;
-    	boost::thread image_thread;
+	boost::thread image_thread;
 };
 
 } //: namespace CameraPGR
