@@ -1,6 +1,6 @@
 /*!
  * \file
- * \brief
+ * \brief Point Grey GigE camera component
  * \author Mikolaj Kojdecki
  */
 
@@ -48,17 +48,19 @@ namespace CameraPGR {
 		 * HUE
 		 * SATURATION
 		 * GAMMA
-		 * IRIS
-		 * FOCUS
-		 * ZOOM
-		 * PAN
-		 * TILT
+		 * IRIS nieedytowalne
+		 * FOCUS nieedytowalne
+		 * ZOOM nieedytowalne
+		 * PAN nieedytowalne
+		 * TILT nieedytowalne
 		 * SHUTTER
 		 * GAIN
 		 * TRIGGER_MODE
 		 * TRIGGER_DELAY
 		 * FRAME_RATE
 		 * TEMPERATURE
+		 * 
+		 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
 		 * */{
 			registerProperty(width);
 			registerProperty(height);
@@ -238,7 +240,13 @@ namespace CameraPGR {
 			FlyCapture2::Error error;
 			unsigned int pair_id = 0;
 			//setting camera properties
-			
+			FlyCapture2::Property prop;
+			prop.type = FlyCapture2::FRAME_RATE;
+			prop.absControl = true;
+			prop.onOff = true;
+			prop.autoManualMode = false;
+			prop.absValue = fps;
+			cam.SetProperty(&prop);
 			while (ok) {
 				//unsigned char *img_frame = NULL;
 				//uint32_t bytes_used;
