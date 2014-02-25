@@ -31,15 +31,31 @@ namespace Sources {
 namespace CameraPGR {
 
 		CameraPGR_Source::CameraPGR_Source(const std::string & name) :
-		Base::Component(name) ,
-		width("width", 1296),
-		height("height", 1032),
-		fps("fps", 10),
-		shutter("shutter", 60),
-		gain("gain", 0),
+		Base::Component(name),
 		camera_url("camera_url", string("null")),
 		camera_serial("camera_serial", 0),
-		pixel_format("pixel_format", string("RGB"))
+		pixel_format("pixel_format", string("RGB")),
+		width("width", 1296), //need to rework
+		height("height", 1032),
+		brightness_mode("brightness_mode", "previous"),
+		brightness_value("brightness_value", -1),
+		auto_exposure_mode("auto_exposure_mode", "previous"),
+		sharpness_mode("sharpness_mode", "previous"),
+		sharpness_value("sharpness_value", -1),
+		white_balance_mode("white_balance_mode", "previous"),
+		white_balance_value("white_balance_value", -1),
+		hue_mode("hue_mode", "previous"),
+		hue_value("hue_value", -1),
+		saturation_mode("saturation_mode", "previous"),
+		saturation_value("saturation_value", -1),
+		gamma_mode("gamma_mode", "previous"),
+		gamma_value("gamma_value", -1),
+		frame_rate_mode("frame_rate_mode", "previous"),
+		frame_rate_value("frame_rate_value", -1),
+		shutter_mode("shutter_mode", "previous"),
+		shutter_value("shutter_value", -1),
+		gain_mode("gain_mode", "previous"),
+		gain("gain_value", 0)
 		/* Camera properties:
 		 * BRIGHTNESS
 		 * AUTO_EXPOSURE
@@ -64,9 +80,21 @@ namespace CameraPGR {
 		 * */{
 			registerProperty(width);
 			registerProperty(height);
-			registerProperty(fps);
-			registerProperty(shutter);
-			registerProperty(gain);
+			registerProperty(brightness_mode);
+			registerProperty(brightness_value);
+			registerProperty(auto_exposure_mode);
+			registerProperty(hue_mode);
+			registerProperty(hue_value);
+			registerProperty(saturation_mode);
+			registerProperty(saturation_value);
+			registerProperty(gamma_mode);
+			registerProperty(gamma_value);
+			registerProperty(frame_rate_mode);
+			registerProperty(frame_rate_value);
+			registerProperty(shutter_mode);
+			registerProperty(shutter_value);
+			registerProperty(gain_mode);
+			registerProperty(gain_value);
 			registerProperty(camera_url);
 			registerProperty(camera_serial);
 			registerProperty(pixel_format);
@@ -240,13 +268,7 @@ namespace CameraPGR {
 			FlyCapture2::Error error;
 			unsigned int pair_id = 0;
 			//setting camera properties
-			FlyCapture2::Property prop;
-			prop.type = FlyCapture2::FRAME_RATE;
-			prop.absControl = true;
-			prop.onOff = true;
-			prop.autoManualMode = false;
-			prop.absValue = fps;
-			cam.SetProperty(&prop);
+			configure("properties");
 			while (ok) {
 				//unsigned char *img_frame = NULL;
 				//uint32_t bytes_used;
@@ -295,6 +317,37 @@ namespace CameraPGR {
 
 		void CameraPGR_Source::onShutterTimeChanged() {
 			//todo zmiana configa (i nazwy metody...)
+		}
+		
+		void CameraPGR_Source::configure(string source) {
+			if(source == "properties")
+			{
+				FlyCapture2::Property prop;
+				if(frame_rate_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::FRAME_RATE;
+					prop.onOff = true;
+					if(frame_rate_mode == "auto")
+						prop.autoManualMode = true;
+					else if(frame_rate_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePushMode = true;
+					}
+					else if(frame_rate_mode == "manual")
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = frame_rate_value;
+					}
+					cam.SetProperty(&prop);
+				}
+			}
+			else if(source == "stream")
+			{
+				
+			}
 		}
 
 } //: namespace CameraPGR

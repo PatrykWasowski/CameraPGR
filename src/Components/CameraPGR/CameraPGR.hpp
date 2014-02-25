@@ -73,6 +73,7 @@ protected:
 	bool onStop();
 
 	void captureAndSendImages();
+	void configure(std::string source);
 
 	// Input data streams
 	Base::DataStreamIn<float> shutterTimeChange;
@@ -84,14 +85,53 @@ protected:
 	// Handlers
 	Base::EventHandler2 h_onShutterTimeChanged;
 	// Properties
-	Base::Property<int> width;
-	Base::Property<int> height;
-	Base::Property<float> fps;
-	Base::Property<float> shutter;
-	Base::Property<int> gain;
 	Base::Property<string> camera_url;
 	Base::Property<unsigned int> camera_serial;
 	Base::Property<string> pixel_format;
+	Base::Property<int> width;
+	Base::Property<int> height;
+	
+	/* Camera properties:
+		 * BRIGHTNESS
+		 * AUTO_EXPOSURE
+		 * SHARPNESS
+		 * WHITE_BALANCE
+		 * HUE
+		 * SATURATION
+		 * GAMMA
+		 * IRIS nieedytowalne
+		 * FOCUS nieedytowalne
+		 * ZOOM nieedytowalne
+		 * PAN nieedytowalne
+		 * TILT nieedytowalne
+		 * SHUTTER
+		 * GAIN
+		 * TRIGGER_MODE
+		 * TRIGGER_DELAY
+		 * FRAME_RATE
+		 * TEMPERATURE
+		 * 
+		 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
+		 * */
+	Base::Property<string> brightness_mode;
+	Base::Property<float> brightness_value;
+	Base::Property<string> auto_exposure_mode;
+	Base::Property<string> sharpness_mode;
+	Base::Property<float> sharpness_value;
+	Base::Property<string> white_balance_mode;
+	Base::Property<float> white_balance_value;
+	Base::Property<string> hue_mode;
+	Base::Property<float> hue_value;
+	Base::Property<string> saturation_mode;
+	Base::Property<float> saturation_value;
+	Base::Property<string> gamma_mode;
+	Base::Property<float> gamma_value;	 
+	Base::Property<string> frame_rate_mode;
+	Base::Property<float> frame_rate_value;
+	Base::Property<string> shutter_mode;
+	Base::Property<float> shutter_value;
+	Base::Property<string> gain_mode;
+	Base::Property<int> gain_value;
 
 	void sendCameraInfo();
 	// Handlers
