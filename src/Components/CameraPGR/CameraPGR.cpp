@@ -37,30 +37,30 @@ namespace CameraPGR {
 		pixel_format("pixel_format", string("RGB")),
 		width("width", 1296), //need to rework
 		height("height", 1032),
-		brightness_mode("brightness_mode", "previous"),
+		brightness_mode("brightness_mode", string("previous")),
 		brightness_value("brightness_value", -1),
-		auto_exposure_mode("auto_exposure_mode", "previous"),
-		sharpness_mode("sharpness_mode", "previous"),
+		auto_exposure_mode("auto_exposure_mode", string("previous")),
+		sharpness_mode("sharpness_mode", string("previous")),
 		sharpness_value("sharpness_value", -1),
-		white_balance_mode("white_balance_mode", "previous"),
+		white_balance_mode("white_balance_mode", string("previous")),
 		white_balance_value("white_balance_value", -1),
-		hue_mode("hue_mode", "previous"),
+		hue_mode("hue_mode", string("previous")),
 		hue_value("hue_value", -1),
-		saturation_mode("saturation_mode", "previous"),
+		saturation_mode("saturation_mode", string("previous")),
 		saturation_value("saturation_value", -1),
-		gamma_mode("gamma_mode", "previous"),
+		gamma_mode("gamma_mode", string("previous")),
 		gamma_value("gamma_value", -1),
-		frame_rate_mode("frame_rate_mode", "previous"),
+		frame_rate_mode("frame_rate_mode", string("previous")),
 		frame_rate_value("frame_rate_value", -1),
-		shutter_mode("shutter_mode", "previous"),
+		shutter_mode("shutter_mode", string("previous")),
 		shutter_value("shutter_value", -1),
-		gain_mode("gain_mode", "previous"),
-		gain("gain_value", 0)
+		gain_mode("gain_mode", string("previous")),
+		gain_value("gain_value", 0)
 		/* Camera properties:
 		 * BRIGHTNESS
-		 * AUTO_EXPOSURE
+		 * AUTO_EXPOSURE	AUTO	ONEPUSH
 		 * SHARPNESS
-		 * WHITE_BALANCE
+		 * WHITE_BALANCE	AUTO	ONEPUSH
 		 * HUE
 		 * SATURATION
 		 * GAMMA
@@ -69,11 +69,11 @@ namespace CameraPGR {
 		 * ZOOM nieedytowalne
 		 * PAN nieedytowalne
 		 * TILT nieedytowalne
-		 * SHUTTER
-		 * GAIN
+		 * SHUTTER	AUTO	ONEPUSH
+		 * GAIN		AUTO	ONEPUSH
 		 * TRIGGER_MODE
 		 * TRIGGER_DELAY
-		 * FRAME_RATE
+		 * FRAME_RATE	AUTO
 		 * TEMPERATURE
 		 * 
 		 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
@@ -126,7 +126,7 @@ namespace CameraPGR {
 			FlyCapture2::BusManager busMgr;
 
 			FlyCapture2::PGRGuid guid;
-			if(camera_serial != 0)
+			if(camera_serial != (unsigned int) 0)
 				error = busMgr.GetCameraFromSerialNumber(camera_serial, &guid);
 
 			// Connect to a camera
@@ -333,9 +333,9 @@ namespace CameraPGR {
 					else if(frame_rate_mode == "onepush")
 					{
 						prop.autoManualMode = false;
-						prop.onePushMode = true;
+						prop.onePush = true;
 					}
-					else if(frame_rate_mode == "manual")
+					else if(frame_rate_mode == "manual" && (int) frame_rate_value != -1)
 					{
 						prop.autoManualMode = false;
 						prop.absControl = true;
