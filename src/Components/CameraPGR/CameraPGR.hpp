@@ -13,6 +13,8 @@
 #include "Property.hpp"
 #include "EventHandler2.hpp"
 
+#include "Config.hpp"
+
 #include <opencv2/opencv.hpp>
 
 #include <boost/thread.hpp>
@@ -21,6 +23,8 @@
 #include <GigECamera.h>
 #include <BusManager.h>
 #include <Image.h>
+
+
 
 namespace Sources {
 namespace CameraPGR {
@@ -76,14 +80,14 @@ protected:
 	void configure(std::string source);
 
 	// Input data streams
-	Base::DataStreamIn<float> shutterTimeChange;
+	Base::DataStreamIn<Config> configChange;
 
 	// Output data streams
 	Base::DataStreamOut<cv::Mat> out_img;
 	Base::DataStreamOut<string> out_info;
 
 	// Handlers
-	Base::EventHandler2 h_onShutterTimeChanged;
+	Base::EventHandler2 h_onConfigChanged;
 	// Properties
 	Base::Property<string> camera_url;
 	Base::Property<unsigned int> camera_serial;
@@ -116,6 +120,7 @@ protected:
 	Base::Property<string> brightness_mode;
 	Base::Property<float> brightness_value;
 	Base::Property<string> auto_exposure_mode;
+	Base::Property<float> exposure_value;
 	Base::Property<string> sharpness_mode;
 	Base::Property<float> sharpness_value;
 	Base::Property<string> white_balance_mode;
@@ -139,6 +144,7 @@ protected:
 
 private:
 	bool ok;
+	bool changing;
 	FlyCapture2::GigECamera cam;
 	FlyCapture2::CameraInfo camInfo;
 	boost::thread image_thread;

@@ -40,6 +40,7 @@ namespace CameraPGR {
 		brightness_mode("brightness_mode", string("previous")),
 		brightness_value("brightness_value", -1),
 		auto_exposure_mode("auto_exposure_mode", string("previous")),
+		exposure_value("exposure_value", -1),
 		sharpness_mode("sharpness_mode", string("previous")),
 		sharpness_value("sharpness_value", -1),
 		white_balance_mode("white_balance_mode", string("previous")),
@@ -83,6 +84,7 @@ namespace CameraPGR {
 			registerProperty(brightness_mode);
 			registerProperty(brightness_value);
 			registerProperty(auto_exposure_mode);
+			registerProperty(exposure_value);
 			registerProperty(hue_mode);
 			registerProperty(hue_value);
 			registerProperty(saturation_mode);
@@ -98,10 +100,13 @@ namespace CameraPGR {
 			registerProperty(camera_url);
 			registerProperty(camera_serial);
 			registerProperty(pixel_format);
+			
+			changing = false;
 		}
 
 		CameraPGR_Source::~CameraPGR_Source() {
 			ok = false;
+			changing = true;
 			image_thread.join();
 
 			cam.StopCapture();
@@ -110,13 +115,13 @@ namespace CameraPGR {
 
 		void CameraPGR_Source::prepareInterface() {
 			// Register data streams, events and event handlers HERE!
-			registerStream("shutterTimeChange", &shutterTimeChange);
+			registerStream("configChange", &configChange);
 			registerStream("out_img", &out_img);
 			registerStream("out_info", &out_info);
 			// Register handlers
-			h_onShutterTimeChanged.setup(boost::bind(&CameraPGR_Source::onShutterTimeChanged, this));
-			registerHandler("onShutterTimeChanged", &h_onShutterTimeChanged);
-			addDependency("onShutterTimeChanged", &shutterTimeChange);
+			h_onConfigChanged.setup(boost::bind(&CameraPGR_Source::onShutterTimeChanged, this));
+			registerHandler("onConfigChanged", &h_onConfigChanged);
+			addDependency("onConfigChanged", &configChange);
 
 		}
 
@@ -270,58 +275,83 @@ namespace CameraPGR {
 			//setting camera properties
 			configure("properties");
 			while (ok) {
-				//unsigned char *img_frame = NULL;
-				//uint32_t bytes_used;
-
-				// Retrieve an image
-				error = cam.RetrieveBuffer( &image );
-				if (error != FlyCapture2::PGRERROR_OK)
+				while(!changing)
 				{
-//            PrintError( error );
-					continue;
-				}
-				
-				if (pixel_format == "RAW")
-					//TODO need to convert from RAW to RGB using FlyCapture2 SDK
-					std::cout << "Do this, ye lazy bastard!" << std::endl;
+					//unsigned char *img_frame = NULL;
+					//uint32_t bytes_used;
+
+					// Retrieve an image
+					error = cam.RetrieveBuffer( &image );
+					if (error != FlyCapture2::PGRERROR_OK)
+					{
+	//            PrintError( error );
+						continue;
+					}
 					
-				unsigned int rowBytes = (double) image.GetReceivedDataSize() / (double) image.GetRows();
-				img = cv::Mat(image.GetRows(), image.GetCols(), CV_8UC3, image.GetData(), rowBytes);
-				cvtColor(img, img, CV_RGB2BGR);
+					if (pixel_format == "RAW")
+						//TODO need to convert from RAW to RGB using FlyCapture2 SDK
+						std::cout << "Do this, ye lazy bastard!" << std::endl;
+						
+					unsigned int rowBytes = (double) image.GetReceivedDataSize() / (double) image.GetRows();
+					img = cv::Mat(image.GetRows(), image.GetCols(), CV_8UC3, image.GetData(), rowBytes);
+					cvtColor(img, img, CV_RGB2BGR);
 
-				out_img.write(img);
-				//timestamp?
-				/*ImagePtr image(new Image);
+					out_img.write(img);
+					//timestamp?
+					/*ImagePtr image(new Image);
 
-				 image->height = convertedImage.GetRows();
-				 image->width = convertedImage.GetCols();
-				 image->step = convertedImage.GetStride();
-				 image->encoding = image_encodings::RGB8;
+					 image->height = convertedImage.GetRows();
+					 image->width = convertedImage.GetCols();
+					 image->step = convertedImage.GetStride();
+					 image->encoding = image_encodings::RGB8;
 
-				 image->header.stamp = capture_time;
-				 image->header.seq = pair_id;
+					 image->header.stamp = capture_time;
+					 image->header.seq = pair_id;
 
-				 image->header.frame_id = frame;
+					 image->header.frame_id = frame;
 
-				 int data_size = convertedImage.GetDataSize();
+					 int data_size = convertedImage.GetDataSize();
 
-				 image->data.resize(data_size);
+					 image->data.resize(data_size);
 
-				 memcpy(&image->data[0], convertedImage.GetData(), data_size);
+					 memcpy(&image->data[0], convertedImage.GetData(), data_size);
 
-				 pub.publish(image);
+					 pub.publish(image);
 
-				 sendInfo(image, capture_time);*/
+					 sendInfo(image, capture_time);*/
+				 }
+			 }
 			}
 		}
 
-		void CameraPGR_Source::onShutterTimeChanged() {
-			//todo zmiana configa (i nazwy metody...)
+		void CameraPGR_Source::onConfigChanged() {
+			Config config = configChange.read()
+			brightness_mode = config.brightness_mode;
+			brightness_value = config.brightness_value;
+			auto_exposure_mode = config.auto_exposure_mode;
+			exposure_value = config.exposure_value;
+			sharpness_mode = config.sharpness_mode;
+			sharpness_value = config.sharpness_value;
+			white_balance_mode = config.white_balance_mode;
+			white_balance_value = config.white_balance_value;
+			hue_mode = config.hue_mode;
+			hue_value = config.hue_value;
+			saturation_mode = config.saturation_mode;
+			saturation_value = config.saturation_value;
+			gamma_mode = config.gamma_mode;
+			gamma_value = config.gamma_value;	 
+			frame_rate_mode = config.frame_rate_mode;
+			frame_rate_value = config.frame_rate_value;
+			shutter_mode = config.shutter_mode;
+			shutter_value = config.shutter_value;
+			gain_mode = config.gain_mode;
+			gain_value = config.gain_value;
+			
+			configure();
 		}
 		
-		void CameraPGR_Source::configure(string source) {
-			if(source == "properties")
-			{
+		void CameraPGR_Source::configure() {
+			changing = true;
 				FlyCapture2::Property prop;
 				if(frame_rate_mode != "previous")
 				{
@@ -330,11 +360,11 @@ namespace CameraPGR {
 					prop.onOff = true;
 					if(frame_rate_mode == "auto")
 						prop.autoManualMode = true;
-					else if(frame_rate_mode == "onepush")
+					/*else if(frame_rate_mode == "onepush")
 					{
 						prop.autoManualMode = false;
 						prop.onePush = true;
-					}
+					}*/
 					else if(frame_rate_mode == "manual" && (int) frame_rate_value != -1)
 					{
 						prop.autoManualMode = false;
@@ -343,11 +373,197 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-			}
-			else if(source == "stream")
-			{
 				
-			}
+				if(auto_exposure_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::AUTO_EXPOSURE;
+					prop.onOff = true;
+					if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else if(auto_exposure_mode == "manual" && (int) exposure_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = exposure_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(shutter_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::SHUTTER;
+					prop.onOff = true;
+					if(shutter_mode == "auto")
+						prop.autoManualMode = true;
+					else if(shutter_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else if(shutter_mode == "manual" && (int) shutter_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = shutter_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(gain_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::GAIN;
+					prop.onOff = true;
+					if(gain_mode == "auto")
+						prop.autoManualMode = true;
+					else if(gain_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else if(gain_mode == "manual" && (int) gain_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = gain_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(white_balance_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::WHITE_BALANCE;
+					prop.onOff = true;
+					if(white_balance_mode == "auto")
+						prop.autoManualMode = true;
+					else if(white_balance_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else if(white_balance_mode == "manual" && (int) white_balance_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = white_balance_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(brightness_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::BRIGHTNESS;
+					prop.onOff = true;
+					/*if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else*/ if(brightness_mode == "manual" && (int) brightness_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = brightness_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(sharpness_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::SHARPNESS;
+					prop.onOff = true;
+					/*if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else*/ if(sharpness_mode == "manual" && (int) sharpness_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = sharpness_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(hue_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::HUE;
+					prop.onOff = true;
+					/*if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else*/ if(hue_mode == "manual" && (int) hue_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = hue_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(saturation_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::SATURATION;
+					prop.onOff = true;
+					/*if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else*/ if(saturation_mode == "manual" && (int) saturation_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = saturation_value;
+					}
+					cam.SetProperty(&prop);
+				}
+				
+				if(gamma_mode != "previous")
+				{
+					
+					prop.type = FlyCapture2::GAMMA;
+					prop.onOff = true;
+					/*if(auto_exposure_mode == "auto")
+						prop.autoManualMode = true;
+					else if(auto_exposure_mode == "onepush")
+					{
+						prop.autoManualMode = false;
+						prop.onePush = true;
+					}
+					else*/ if(gamma_mode == "manual" && (int) gamma_value != -1)
+					{
+						prop.autoManualMode = false;
+						prop.absControl = true;
+						prop.absValue = gamma_value;
+					}
+					cam.SetProperty(&prop);
+				}
+			
+			changing = false;
 		}
 
 } //: namespace CameraPGR
