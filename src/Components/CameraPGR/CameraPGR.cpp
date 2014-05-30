@@ -119,7 +119,7 @@ namespace CameraPGR {
 			registerStream("out_img", &out_img);
 			registerStream("out_info", &out_info);
 			// Register handlers
-			h_onConfigChanged.setup(boost::bind(&CameraPGR_Source::onShutterTimeChanged, this));
+			h_onConfigChanged.setup(boost::bind(&CameraPGR_Source::onNewConfig, this));
 			registerHandler("onConfigChanged", &h_onConfigChanged);
 			addDependency("onConfigChanged", &configChange);
 
@@ -210,7 +210,7 @@ namespace CameraPGR {
 
 		void CameraPGR_Source::sendCameraInfo() {
 			std::stringstream ss;
-			char macAddress[64];
+			/*char macAddress[64];
 			sprintf(
 					macAddress,
 					"%02X:%02X:%02X:%02X:%02X:%02X",
@@ -262,9 +262,17 @@ namespace CameraPGR {
 			<< "MAC address - " << macAddress << "\n"
 			<< "IP address - " << ipAddress << "\n"
 			<< "Subnet mask - " << subnetMask << "\n"
-			<< "Default gateway - " << defaultGateway << "\n\n";
+			<< "Default gateway - " << defaultGateway << "\n\n";*/
+			
 			//TODO dopisać wypisanie aktualnego configa
+			
 			out_info.write(ss.str());
+		}
+		
+		void CameraPGR_Source::sendConfigInfo() {
+			Config currentConfig;
+			
+			//odczytanie własności kamery
 		}
 
 		void CameraPGR_Source::captureAndSendImages() {
@@ -273,7 +281,7 @@ namespace CameraPGR {
 			FlyCapture2::Error error;
 			unsigned int pair_id = 0;
 			//setting camera properties
-			configure("properties");
+			configure();
 			while (ok) {
 				while(!changing)
 				{
@@ -321,11 +329,11 @@ namespace CameraPGR {
 					 sendInfo(image, capture_time);*/
 				 }
 			 }
-			}
 		}
 
-		void CameraPGR_Source::onConfigChanged() {
-			Config config = configChange.read()
+		void CameraPGR_Source::onNewConfig() {
+			CameraPGR::Config config;
+			configChange.read();
 			brightness_mode = config.brightness_mode;
 			brightness_value = config.brightness_value;
 			auto_exposure_mode = config.auto_exposure_mode;
@@ -564,6 +572,7 @@ namespace CameraPGR {
 				}
 			
 			changing = false;
+			sendCameraInfo();
 		}
 
 } //: namespace CameraPGR

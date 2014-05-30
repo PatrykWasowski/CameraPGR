@@ -77,7 +77,8 @@ protected:
 	bool onStop();
 
 	void captureAndSendImages();
-	void configure(std::string source);
+	void configure();
+	void sendConfigInfo();
 
 	// Input data streams
 	Base::DataStreamIn<Config> configChange;
@@ -140,7 +141,7 @@ protected:
 
 	void sendCameraInfo();
 	// Handlers
-	void onShutterTimeChanged();
+	void onNewConfig();
 
 private:
 	bool ok;
