@@ -321,7 +321,6 @@ namespace CameraPGR {
 					 sendInfo(image, capture_time);*/
 				 }
 			 }
-			}
 		}
 
 		void CameraPGR_Source::onConfigChanged() {
