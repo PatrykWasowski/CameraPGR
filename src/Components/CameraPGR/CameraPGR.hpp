@@ -77,7 +77,7 @@ protected:
 	bool onStop();
 
 	void captureAndSendImages();
-	void configure(std::string source);
+	void configure();
 
 	// Input data streams
 	Base::DataStreamIn<Config> configChange;
