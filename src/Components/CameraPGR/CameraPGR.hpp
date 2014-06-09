@@ -24,8 +24,6 @@
 #include <BusManager.h>
 #include <Image.h>
 
-
-
 namespace Sources {
 namespace CameraPGR {
 
@@ -95,29 +93,29 @@ protected:
 	Base::Property<string> pixel_format;
 	Base::Property<int> width;
 	Base::Property<int> height;
-	
+
 	/* Camera properties:
-		 * BRIGHTNESS
-		 * AUTO_EXPOSURE
-		 * SHARPNESS
-		 * WHITE_BALANCE
-		 * HUE
-		 * SATURATION
-		 * GAMMA
-		 * IRIS nieedytowalne
-		 * FOCUS nieedytowalne
-		 * ZOOM nieedytowalne
-		 * PAN nieedytowalne
-		 * TILT nieedytowalne
-		 * SHUTTER
-		 * GAIN
-		 * TRIGGER_MODE
-		 * TRIGGER_DELAY
-		 * FRAME_RATE
-		 * TEMPERATURE
-		 * 
-		 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
-		 * */
+	 * BRIGHTNESS
+	 * AUTO_EXPOSURE
+	 * SHARPNESS
+	 * WHITE_BALANCE
+	 * HUE
+	 * SATURATION
+	 * GAMMA
+	 * IRIS nieedytowalne
+	 * FOCUS nieedytowalne
+	 * ZOOM nieedytowalne
+	 * PAN nieedytowalne
+	 * TILT nieedytowalne
+	 * SHUTTER
+	 * GAIN
+	 * TRIGGER_MODE
+	 * TRIGGER_DELAY
+	 * FRAME_RATE
+	 * TEMPERATURE
+	 *
+	 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
+	 * */
 	Base::Property<string> brightness_mode;
 	Base::Property<float> brightness_value;
 	Base::Property<string> auto_exposure_mode;
@@ -131,7 +129,7 @@ protected:
 	Base::Property<string> saturation_mode;
 	Base::Property<float> saturation_value;
 	Base::Property<string> gamma_mode;
-	Base::Property<float> gamma_value;	 
+	Base::Property<float> gamma_value;
 	Base::Property<string> frame_rate_mode;
 	Base::Property<float> frame_rate_value;
 	Base::Property<string> shutter_mode;

@@ -17,6 +17,7 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 
 # Find another DCLs our one depends on
 # Use macro: DISCODE_FIND_DCL(<DCL_NAME>)
+DISCODE_FIND_DCL(CvCoreTypes)
 
 # ##############################################################################
 # Add source directories

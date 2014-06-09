@@ -22,11 +22,11 @@
 /***************************** IMPORTANT NOTICE ************************
  * For the time being this component IS NOT WORKING without submitting
  * the serial number of the camera in component configuration (parameter
- * camera_serial). The number can be chcecked on the sticker on the 
+ * camera_serial). The number can be chcecked on the sticker on the
  * camera or in FlyCap application.
- * 
- * 
- */ 
+ *
+ *
+ */
 namespace Sources {
 namespace CameraPGR {
 
@@ -76,7 +76,7 @@ namespace CameraPGR {
 		 * TRIGGER_DELAY
 		 * FRAME_RATE	AUTO
 		 * TEMPERATURE
-		 * 
+		 *
 		 * Po dwie własności na atrybut, tj. czy auto czy nie i jeśli nie to jaka wartość. Jeśli nie ma wartości to ta z flasha kamery.
 		 * */{
 			registerProperty(width);
@@ -100,7 +100,7 @@ namespace CameraPGR {
 			registerProperty(camera_url);
 			registerProperty(camera_serial);
 			registerProperty(pixel_format);
-			
+
 			changing = false;
 		}
 
@@ -137,11 +137,12 @@ namespace CameraPGR {
 			// Connect to a camera
 			// According to documentation when guid is null it should connect to first found camera.
 			// Now, the  question is: is guid in this case null? Need to check.
-			
+
 			//God damn it, of course it's not working.
 			error = cam.Connect(&guid);
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
+				LOG(LERROR) << "Connect error";
 				//LOG(LERROR) <<  error;
 				//return -1;
 			}
@@ -151,6 +152,7 @@ namespace CameraPGR {
 			error = cam.GetCameraInfo(&camInfo);
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
+				LOG(LERROR) << "GetCameraInfo error";
 				//LOG(LERROR) << error;
 				//return -1;
 			}
@@ -159,15 +161,15 @@ namespace CameraPGR {
 			error = cam.GetGigEImageSettingsInfo( &imageSettingsInfo );
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
+				LOG(LERROR) << "GetGigEImageSettingsInfo error";
 				//LOG(LERROR) << error;
 				//return -1;
 			}
-
 			FlyCapture2::GigEImageSettings imageSettings;
 			imageSettings.offsetX = 0;
 			imageSettings.offsetY = 0;
-			imageSettings.height = height;
-			imageSettings.width = width;
+		    imageSettings.height = imageSettingsInfo.maxHeight;
+		    imageSettings.width = imageSettingsInfo.maxWidth;
 			if(pixel_format == "RAW")
 				imageSettings.pixelFormat = FlyCapture2::PIXEL_FORMAT_RAW8;
 			else if(pixel_format == "RGB" || pixel_format == "RGB8")
@@ -179,6 +181,7 @@ namespace CameraPGR {
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
 				//LOG(LERROR) << error;
+				LOG(LERROR) << "SetGigEImageSettings error: " << error.GetDescription();
 				//return -1;
 			}
 
@@ -187,6 +190,7 @@ namespace CameraPGR {
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
 				//LOG(LERROR) << error;
+				LOG(LERROR) << "StartCapture error";
 				//return -1;
 			}
 			ok = true;
@@ -204,13 +208,13 @@ namespace CameraPGR {
 
 		bool CameraPGR_Source::onStart() {
 			LOG(LINFO) << "CameraPGR_Source::start()\n";
-			sendCameraInfo();
+			//sendCameraInfo();
 			return true;
 		}
 
 		void CameraPGR_Source::sendCameraInfo() {
 			std::stringstream ss;
-			/*char macAddress[64];
+			char macAddress[64];
 			sprintf(
 					macAddress,
 					"%02X:%02X:%02X:%02X:%02X:%02X",
@@ -262,22 +266,25 @@ namespace CameraPGR {
 			<< "MAC address - " << macAddress << "\n"
 			<< "IP address - " << ipAddress << "\n"
 			<< "Subnet mask - " << subnetMask << "\n"
-			<< "Default gateway - " << defaultGateway << "\n\n";*/
-			
+			<< "Default gateway - " << defaultGateway << "\n\n";
+
 			//TODO dopisać wypisanie aktualnego configa
-			
-			out_info.write(ss.str());
+
+			//out_info.write(ss.str());
+			LOG(LNOTICE) << ss.str();
 		}
-		
+
 		void CameraPGR_Source::sendConfigInfo() {
 			Config currentConfig;
-			
+
 			//odczytanie własności kamery
 		}
 
 		void CameraPGR_Source::captureAndSendImages() {
 			cv::Mat img;
 			FlyCapture2::Image image;
+			FlyCapture2::Image convertedRawImage;
+			FlyCapture2::Image* imagePointer = 0;
 			FlyCapture2::Error error;
 			unsigned int pair_id = 0;
 			//setting camera properties
@@ -292,19 +299,38 @@ namespace CameraPGR {
 					error = cam.RetrieveBuffer( &image );
 					if (error != FlyCapture2::PGRERROR_OK)
 					{
-	//            PrintError( error );
+						//PrintError( error );
 						continue;
 					}
-					
-					if (pixel_format == "RAW")
-						//TODO need to convert from RAW to RGB using FlyCapture2 SDK
-						std::cout << "Do this, ye lazy bastard!" << std::endl;
-						
-					unsigned int rowBytes = (double) image.GetReceivedDataSize() / (double) image.GetRows();
-					img = cv::Mat(image.GetRows(), image.GetCols(), CV_8UC3, image.GetData(), rowBytes);
+
+					if(pixel_format == "RAW")
+					{
+				        error = image.Convert( FlyCapture2::PIXEL_FORMAT_RGBU, &convertedRawImage );
+				        if (error != FlyCapture2::PGRERROR_OK)
+				        {
+				            //PrintError( error );
+				            //return -1;
+				        	continue;
+				        	//TODO add DisCODe logging about error
+				        }
+				        imagePointer = &convertedRawImage;
+
+					} else
+			        {
+						imagePointer = &image;
+			        }
+
+					unsigned int rowBytes = (double) imagePointer->GetReceivedDataSize() / (double) imagePointer->GetRows();
+					img = cv::Mat(imagePointer->GetRows(), imagePointer->GetCols(), CV_8UC3, imagePointer->GetData(), rowBytes);
 					cvtColor(img, img, CV_RGB2BGR);
 
 					out_img.write(img);
+
+					LOG(LDEBUG) << "PixFormat: " << imagePointer->GetPixelFormat();
+					LOG(LDEBUG) << "BitsPerPixel: " << imagePointer->GetBitsPerPixel();
+					LOG(LDEBUG) << "DataSize: " << imagePointer->GetDataSize();
+					LOG(LDEBUG) << "Stride: " << imagePointer->GetStride();
+
 					//timestamp?
 					/*ImagePtr image(new Image);
 
@@ -347,23 +373,23 @@ namespace CameraPGR {
 			saturation_mode = config.saturation_mode;
 			saturation_value = config.saturation_value;
 			gamma_mode = config.gamma_mode;
-			gamma_value = config.gamma_value;	 
+			gamma_value = config.gamma_value;
 			frame_rate_mode = config.frame_rate_mode;
 			frame_rate_value = config.frame_rate_value;
 			shutter_mode = config.shutter_mode;
 			shutter_value = config.shutter_value;
 			gain_mode = config.gain_mode;
 			gain_value = config.gain_value;
-			
+
 			configure();
 		}
-		
+
 		void CameraPGR_Source::configure() {
 			changing = true;
 				FlyCapture2::Property prop;
 				if(frame_rate_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::FRAME_RATE;
 					prop.onOff = true;
 					if(frame_rate_mode == "auto")
@@ -381,10 +407,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(auto_exposure_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::AUTO_EXPOSURE;
 					prop.onOff = true;
 					if(auto_exposure_mode == "auto")
@@ -402,10 +428,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(shutter_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::SHUTTER;
 					prop.onOff = true;
 					if(shutter_mode == "auto")
@@ -423,10 +449,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(gain_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::GAIN;
 					prop.onOff = true;
 					if(gain_mode == "auto")
@@ -444,10 +470,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(white_balance_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::WHITE_BALANCE;
 					prop.onOff = true;
 					if(white_balance_mode == "auto")
@@ -465,10 +491,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(brightness_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::BRIGHTNESS;
 					prop.onOff = true;
 					/*if(auto_exposure_mode == "auto")
@@ -486,10 +512,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(sharpness_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::SHARPNESS;
 					prop.onOff = true;
 					/*if(auto_exposure_mode == "auto")
@@ -507,10 +533,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(hue_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::HUE;
 					prop.onOff = true;
 					/*if(auto_exposure_mode == "auto")
@@ -528,10 +554,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(saturation_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::SATURATION;
 					prop.onOff = true;
 					/*if(auto_exposure_mode == "auto")
@@ -549,10 +575,10 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-				
+
 				if(gamma_mode != "previous")
 				{
-					
+
 					prop.type = FlyCapture2::GAMMA;
 					prop.onOff = true;
 					/*if(auto_exposure_mode == "auto")
@@ -570,7 +596,7 @@ namespace CameraPGR {
 					}
 					cam.SetProperty(&prop);
 				}
-			
+
 			changing = false;
 			sendCameraInfo();
 		}
