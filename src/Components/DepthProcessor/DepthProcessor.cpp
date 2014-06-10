@@ -40,7 +40,8 @@ void DepthProcessor::prepareInterface() {
 	registerStream("r_cam_info", &r_in_cam_info);
 	registerStream("out_depth_map", &out_depth_map);
 	registerStream("out_left", &out_left_dispared);
-	registerStream("out_right", &out_right_dispared);
+    registerStream("out_right", &out_right_dispared);
+    registerStream("out_cloud_xyz", &out_cloud_xyz);
 
 	// Register handlers
 	h_CalculateDepthMap.setup(boost::bind(&DepthProcessor::CalculateDepthMap, this));
@@ -182,19 +183,52 @@ void DepthProcessor::CalculateDepthMap() {
     else
         disp.convertTo(disp8, CV_8U);
 
-	LOG(LINFO) << "Writing to data stream";
+    LOG(LINFO) << "Calculate Q transform matrix";
+    generateQ(P1,P2, Q);
 
+    LOG(LINFO) << "Generating depth point cloud";
+    cv::Mat xyz;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
+    reprojectImageTo3D(disp, xyz, Q, true);
+    const double max_z = 1.0e4;
+    for(int y = 0; y < xyz.rows; y++)
+    {
+        for(int x = 0; x < xyz.cols; x++)
+        {
+            cv::Vec3f point = xyz.at<cv::Vec3f>(y, x);
+            if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
+            //fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
+            pcl::PointXYZ point1(point[0], point[1], point[2]);
+            cloud->push_back(point1);
+        }
+    }
+
+    LOG(LINFO) << "Writing to data stream";
 	out_depth_map.write(disp8);
 	out_left_dispared.write(oLeftRectified);
 	out_right_dispared.write(oRightRectified);
+    out_cloud_xyz.write(cloud);
 	} catch (...)
 	{
 		LOG(LERROR) << "Error occured in processing input";
 	}
-
 }
 
-
+void DepthProcessor::generateQ(const cv::Mat& leftPMatrix, const cv::Mat& rightPMatrix, cv::Mat& Q) {
+    double rFx = rightPMatrix.at<double>(0,0);
+    double Tx = rightPMatrix.at<double>(0,3) / -rFx;
+    double rCx = rightPMatrix.at<double>(0,2);
+    double rCy = rightPMatrix.at<double>(1,2);
+    double lCx = leftPMatrix.at<double>(0,2);
+    Q = cv::Mat(4,4, CV_64F);
+    Q.data[0,0] = 1.0;
+    Q.data[1,1] = 1.0;
+    Q.data[3,2] = -1.0 / Tx;
+    Q.data[0,3] = -rCx;
+    Q.data[1,3] = -rCy;
+    Q.data[2,3] = rFx;
+    Q.data[3,3] = (rCx - lCx) / Tx;
+}
 
 } //: namespace DepthProcessor
 } //: namespace Processors

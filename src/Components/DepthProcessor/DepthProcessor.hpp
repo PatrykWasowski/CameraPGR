@@ -18,6 +18,8 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 
 namespace Processors {
 namespace DepthProcessor {
@@ -74,6 +76,11 @@ protected:
 	 */
 	bool onStop();
 
+    /*!
+     * Generate Q matrix for 2 projection matrices
+     */
+    void generateQ(const cv::Mat& leftPMatrix, const cv::Mat& rightPMatrix, cv::Mat& Q);
+
 	// Input data streams
 	Base::DataStreamIn<cv::Mat> l_in_img;
 	Base::DataStreamIn<cv::Mat> r_in_img;
@@ -83,7 +90,8 @@ protected:
 	// Output data streams
 	Base::DataStreamOut<cv::Mat> out_depth_map;
 	Base::DataStreamOut<cv::Mat> out_left_dispared;
-	Base::DataStreamOut<cv::Mat> out_right_dispared;
+    Base::DataStreamOut<cv::Mat> out_right_dispared;
+    Base::DataStreamOut<pcl::PointCloud<pcl::PointXYZ>::Ptr > out_cloud_xyz;
 
 	// Properties
 	Base::Property<string> algorythm_type;
@@ -100,7 +108,6 @@ protected:
 	
 	// Handlers
 	void CalculateDepthMap();
-
 };
 
 } //: namespace DepthProcessor
