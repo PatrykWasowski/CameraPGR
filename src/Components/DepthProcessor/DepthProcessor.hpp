@@ -19,20 +19,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#define minDisparity  15
-#define sgbmP1  0
-#define sgbmP2  0
-#define disp12MaxDiff 0
-#define preFilterCap 0
-#define uniquenessRatio 0
-#define speckleWindowSize 0
-#define speckleRange 0
-#define fullDP false
-#define SADWindowSize 0
-
-
-
-
 namespace Processors {
 namespace DepthProcessor {
 
@@ -101,13 +87,16 @@ protected:
 
 	// Properties
 	Base::Property<string> algorythm_type;
+    //Base::Property<int> numOfDisparities;
+    //Base::Property<int> blockSize;
 
 	// Handlers
 	Base::EventHandler2 h_CalculateDepthMap;
 
 	cv::StereoSGBM* sgbm;
 	cv::StereoBM* bm;
-	int numberOfDisparities;
+    int numberOfDisparities;
+    int SADWindowSize;
 	
 	// Handlers
 	void CalculateDepthMap();

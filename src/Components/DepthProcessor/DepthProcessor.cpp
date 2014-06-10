@@ -19,10 +19,12 @@ namespace DepthProcessor {
 
 DepthProcessor::DepthProcessor(const std::string & name) :
 		Base::Component(name),
-		algorythm_type("algorythm_type", STEREO_BM) {
-	numberOfDisparities = 512;
-	bm = NULL;
-	sgbm = NULL;
+        algorythm_type("algorythm_type", STEREO_SGBM) {
+    bm = NULL;
+    sgbm = NULL;
+    numberOfDisparities = 0;
+    //TODO hardcoded window size
+    SADWindowSize = 5;
 }
 
 DepthProcessor::~DepthProcessor() {
@@ -48,10 +50,8 @@ void DepthProcessor::prepareInterface() {
 }
 
 bool DepthProcessor::onInit() {
-	//TODO usunac 1280 z kodu bo hardcode!!!!
-	numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((1280/8) + 15) & -16;
-	sgbm = new cv::StereoSGBM(minDisparity, numberOfDisparities,SADWindowSize,sgbmP1,sgbmP2, disp12MaxDiff, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, fullDP);
-	bm = new cv::StereoBM(cv::StereoBM::BASIC_PRESET, numberOfDisparities);
+    sgbm = new cv::StereoSGBM();
+    bm = new cv::StereoBM();
 	return true;
 }
 
@@ -83,21 +83,20 @@ void DepthProcessor::CalculateDepthMap() {
 	Types::CameraInfo oLeftCamInfo(l_in_cam_info.read());
 	Types::CameraInfo oRightCamInfo(r_in_cam_info.read());
 
-/*
-	LOG(LINFO) << "Get images from Data Streams";
-	cv::Mat oLeftRectifyMat =  Types::MatrixTranslator::fromStr("0.969748028765496 0.0307665090006707 -0.24216148048223; -0.0327201255585135 0.99945635200596 -0.0040489280524987; 0.241905258497762 0.011849994044338 0.970227511232433", CV_64F);
-	cv::Mat oRightRectifyMat = Types::MatrixTranslator::fromStr("0.972643867434977 0.0343306345904133 -0.229750548790966; -0.0324764362110336 0.999402273156889 0.0118481011083424; 0.230019973550475 -0.00406250384151901 0.973177428750984", CV_64F);
-*/
-
 	LOG(LINFO) << "Create bunch of fresh cv::Mat objects";
 	cv::StereoVar var;
     cv::Mat Q;
     cv::Mat R1, P1, R2, P2;
     cv::Size img_size = oLeftImage.size();
 
-    // Rotation and Translation matrices between cameras
-    cv::Mat R = Types::MatrixTranslator::fromStr("1529.207571 0.000000 726.349884; 0.000000 1529.207571 535.944351; 0 0 1", CV_64F);
-    cv::Mat T = Types::MatrixTranslator::fromStr("-141.355314; 0; 0", CV_64F);
+    cv::FileStorage fs("/home/dkaczmar/stereo/extrisinc.yml", cv::FileStorage::READ);
+
+    fs["R1"] >> R1;
+    fs["R2"] >> R2;
+    fs["P1"] >> P1;
+    fs["P2"] >> P2;
+
+    fs.release();
 
     // Camera matrices
     cv::Mat M1 = oLeftCamInfo.cameraMatrix();
@@ -107,16 +106,13 @@ void DepthProcessor::CalculateDepthMap() {
     cv::Mat D1 = oLeftCamInfo.distCoeffs();
     cv::Mat D2 = oRightCamInfo.distCoeffs();
 
-    LOG(LINFO) << "Calculate stereo rectification maps";
-    cv::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1, img_size);
 
-    LOG(LINFO) << M1;
-    LOG(LINFO) << M2;
-    LOG(LINFO) << D1;
-    LOG(LINFO) << D2;
-    LOG(LINFO) << R;
-    LOG(LINFO) << T;
+    LOG(LINFO) << "M1 "<< M1;
+    LOG(LINFO) << "M2 "<< M2;
+    LOG(LINFO) << "D1 "<< D1;
+    LOG(LINFO) << "D2 "<< D2;
     LOG(LINFO) << "Size " << img_size.height << "x"<<img_size.width;
+
     LOG(LINFO) << R1;
     LOG(LINFO) << P1;
     LOG(LINFO) << R2;
@@ -137,18 +133,32 @@ void DepthProcessor::CalculateDepthMap() {
 
     LOG(LINFO) << "#ofDisparities: " << numberOfDisparities;
 
-//    var.levels = 3; // ignored with USE_AUTO_PARAMS
-//    var.pyrScale = 0.5; // ignored with USE_AUTO_PARAMS
-//    var.nIt = 25;
-//    var.minDisp = -numberOfDisparities;
-//    var.maxDisp = 0;
-//    var.poly_n = 3;
-//    var.poly_sigma = 0.0;
-//    var.fi = 15.0f;
-//    var.lambda = 0.03f;
-//    var.penalization = var.PENALIZATION_TICHONOV; // ignored with USE_AUTO_PARAMS
-//    var.cycle = var.CYCLE_V; // ignored with USE_AUTO_PARAMS
-//    var.flags = var.USE_SMART_ID | var.USE_AUTO_PARAMS | var.USE_INITIAL_DISPARITY | var.USE_MEDIAN_FILTERING ;
+    numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
+
+    bm->state->preFilterCap = 31;
+    bm->state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 9;
+    bm->state->minDisparity = 0;
+    bm->state->numberOfDisparities = numberOfDisparities;
+    bm->state->textureThreshold = 10;
+    bm->state->uniquenessRatio = 15;
+    bm->state->speckleWindowSize = 100;
+    bm->state->speckleRange = 32;
+    bm->state->disp12MaxDiff = 1;
+
+    sgbm->preFilterCap = 63;
+    sgbm->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
+
+    int cn = oLeftImage.channels();
+
+    sgbm->P1 = 8*cn*sgbm->SADWindowSize*sgbm->SADWindowSize;
+    sgbm->P2 = 32*cn*sgbm->SADWindowSize*sgbm->SADWindowSize;
+    sgbm->minDisparity = 0;
+    sgbm->numberOfDisparities = numberOfDisparities;
+    sgbm->uniquenessRatio = 10;
+    sgbm->speckleWindowSize = bm->state->speckleWindowSize;
+    sgbm->speckleRange = bm->state->speckleRange;
+    sgbm->disp12MaxDiff = 1;
+    sgbm->fullDP = ( algorythm_type == STEREO_BM );
 
     cv::Mat disp, disp8;
 
