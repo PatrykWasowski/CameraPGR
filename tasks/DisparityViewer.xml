@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<Task>
+	<!-- reference task information -->
+	<Reference>
+		<Author>
+			<name>Dawid Kaczmarek</name>
+			<link></link>
+		</Author>
+	
+		<Description>
+			<brief>Disparity viewer</brief>
+			<full>Generate and displays depth map generated from stereo-images</full>
+		</Description>
+	</Reference>
+
+	<!-- task definition -->
+	<Subtasks>
+		<Subtask name="Processing">
+			<Executor name="ExecDisp" period="1">
+				<Component name="SequenceLeft" type="CvBasic:Sequence" priority="1" bump="0">
+					<param name="sequence.directory">/home/dkaczmar/stereo/left/</param>
+					<param name="sequence.pattern">left*.*</param>
+					<param name="mode.loop">1</param>					
+				</Component>
+				<Component name="SequenceRight" type="CvBasic:Sequence" priority="2" bump="0">
+					<param name="sequence.directory">/home/dkaczmar/stereo/right/</param>
+					<param name="sequence.pattern">right*.*</param>
+					<param name="mode.loop">1</param>					
+				</Component>
+				<Component name="CameraInfoLeft" type="CvCoreTypes:CameraInfoProvider" priority="3" bump="0">
+					<param name="camera_matrix">1445.69543371487 0 622.89561146331; 0 1451.60719632398 499.310147973752; 0 0 1</param>
+					<param name="dist_coeffs">-0.213368795840596 0.133203194326672 0.00176762788151009 -0.00218227169891789 0</param>
+				</Component>
+				<Component name="CameraInfoRight" type="CvCoreTypes:CameraInfoProvider" priority="4" bump="0">
+					<param name="camera_matrix">1491.78225661853 0 640.340294154435; 0 1497.35347529192 519.731173113502; 0 0 1</param>
+					<param name="dist_coeffs">-0.222156811640083 0.148513519435087 -0.00118623190491308 -0.00160493571893508 0</param>
+				</Component>
+				<Component name="DepthCalculator" type="CameraPGR:DepthProcessor" priority="5" bump="0">
+				</Component>
+			</Executor>
+			<Executor name="DisplayExec" period="0.5">
+				<Component name="WindowLeft" type="CvBasic:CvWindow" priority="6" bump="0">
+					<param name="count">1</param>
+					<param name="title">LeftImage</param>
+				</Component>
+				<Component name="WindowRight" type="CvBasic:CvWindow" priority="7" bump="0">
+					<param name="count">1</param>
+					<param name="title">RightImage</param>
+				</Component>
+				<Component name="WindowDepth" type="CvBasic:CvWindow" priority="8" bump="0">
+					<param name="count">1</param>
+					<param name="title">DisparityMap</param>
+				</Component>
+			</Executor>
+		</Subtask>	
+	</Subtasks>
+	
+	<!-- connections between events and handelrs -->
+	<Events>
+	</Events>
+	
+	<!-- pipes connecting datastreams -->
+	<DataStreams>
+		<Source name="SequenceLeft.out_img">
+			<sink>DepthCalculator.l_in_img</sink>
+		</Source>
+		<Source name="SequenceRight.out_img">
+			<sink>DepthCalculator.r_in_img</sink>
+		</Source>
+		<Source name="CameraInfoLeft.out_camera_info">
+			<sink>DepthCalculator.l_cam_info</sink>
+		</Source>
+		<Source name="CameraInfoRight.out_camera_info">
+			<sink>DepthCalculator.r_cam_info</sink>
+		</Source>
+		<Source name="DepthCalculator.out_left">
+			<sink>WindowLeft.in_img</sink>
+		</Source>
+		<Source name="DepthCalculator.out_right">
+			<sink>WindowRight.in_img</sink>
+		</Source>
+		<Source name="DepthCalculator.out_depth_map">
+			<sink>WindowDepth.in_img</sink>
+		</Source>
+	</DataStreams>
+</Task>
+
