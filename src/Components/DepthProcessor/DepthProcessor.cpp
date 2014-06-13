@@ -86,16 +86,19 @@ void DepthProcessor::CalculateDepthMap() {
 
 	LOG(LINFO) << "Create bunch of fresh cv::Mat objects";
 	cv::StereoVar var;
+    cv::Rect roi1, roi2;
     cv::Mat Q;
-    cv::Mat R1, P1, R2, P2;
+    cv::Mat R, T, R1, P1, R2, P2;
     cv::Size img_size = oLeftImage.size();
 
     cv::FileStorage fs("/home/dkaczmar/stereo/extrisinc.yml", cv::FileStorage::READ);
 
-    fs["R1"] >> R1;
-    fs["R2"] >> R2;
-    fs["P1"] >> P1;
-    fs["P2"] >> P2;
+    //fs["R1"] >> R1;
+    //fs["R2"] >> R2;
+    //fs["P1"] >> P1;
+    //fs["P2"] >> P2;
+    fs["R"] >> R;
+    fs["T"] >> T;
 
     fs.release();
 
@@ -119,6 +122,9 @@ void DepthProcessor::CalculateDepthMap() {
     LOG(LINFO) << R2;
     LOG(LINFO) << P2;
 
+
+    cv::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
+
     cv::Mat map11, map12, map21, map22;
 
     LOG(LINFO) << "Calculate left transformation maps";
@@ -136,6 +142,8 @@ void DepthProcessor::CalculateDepthMap() {
 
     numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
 
+    bm->state->roi1 = roi1;
+    bm->state->roi2 = roi2;
     bm->state->preFilterCap = 31;
     bm->state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 9;
     bm->state->minDisparity = 0;
@@ -183,8 +191,8 @@ void DepthProcessor::CalculateDepthMap() {
     else
         disp.convertTo(disp8, CV_8U);
 
-    LOG(LINFO) << "Calculate Q transform matrix";
-    generateQ(P1,P2, Q);
+    //LOG(LINFO) << "Calculate Q transform matrix";
+    //generateQ(P1,P2, Q);
 
     LOG(LINFO) << "Generating depth point cloud";
     cv::Mat xyz;
