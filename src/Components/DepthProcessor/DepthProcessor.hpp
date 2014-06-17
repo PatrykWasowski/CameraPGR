@@ -27,7 +27,7 @@ namespace DepthProcessor {
 static const string STEREO_BM = "STEREO_BM";
 static const string STEREO_SGBM = "STEREO_SGBM";
 static const string STEREO_HH = "STEREO_HH";
-static const string STEREO_VAR = "STEREO_VAR";
+//static const string STEREO_VAR = "STEREO_VAR";
 
 /*!
  * \class DepthProcessor
@@ -95,16 +95,22 @@ protected:
 
 	// Properties
 	Base::Property<string> algorythm_type;
-    //Base::Property<int> numOfDisparities;
-    //Base::Property<int> blockSize;
+    Base::Property<int> numberOfDisparities;
+    Base::Property<int> SADWindowSize;
+    Base::Property<int> preFilterCap;
+    Base::Property<int> minDisparity;
+    Base::Property<int> disp12MaxDiff;
+    Base::Property<int> speckleRange;
+    Base::Property<int> speckleWindowSize;
+    Base::Property<int> uniquenessRatio;
+    Base::Property<int> textureThreshold;
+
 
 	// Handlers
 	Base::EventHandler2 h_CalculateDepthMap;
 
 	cv::StereoSGBM* sgbm;
 	cv::StereoBM* bm;
-    int numberOfDisparities;
-    int SADWindowSize;
 	
 	// Handlers
 	void CalculateDepthMap();

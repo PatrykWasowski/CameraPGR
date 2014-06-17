@@ -19,12 +19,49 @@ namespace DepthProcessor {
 
 DepthProcessor::DepthProcessor(const std::string & name) :
 		Base::Component(name),
-        algorythm_type("algorythm_type", STEREO_SGBM) {
+        numberOfDisparities("numberOfDisparities (divisible by 16)", int(0)),
+        SADWindowSize("SADWindowSize (MUST BE ODD >= 1)", int(5)),
+        preFilterCap("preFilterCap", int(63)),
+        minDisparity("minDisparity", int(0)),
+        disp12MaxDiff("disp12MaxDiff", int(1)),
+        speckleRange("speckleRange", int(32)),
+        speckleWindowSize("speckleWindowSize", int(100)),
+        uniquenessRatio("uniquenessRatio", int(10)),
+        textureThreshold("textureThreshold", int(10)),
+        algorythm_type("algorythm_type", STEREO_SGBM)
+{
     bm = NULL;
     sgbm = NULL;
-    numberOfDisparities = 0;
-    //TODO hardcoded window size
-    SADWindowSize = 5;
+
+
+    registerProperty(algorythm_type);
+    numberOfDisparities.addConstraint("1");
+    numberOfDisparities.addConstraint("9999");
+    registerProperty(numberOfDisparities);
+    SADWindowSize.addConstraint("1");
+    SADWindowSize.addConstraint("9999");
+    registerProperty(SADWindowSize);
+    preFilterCap.addConstraint("1");
+    preFilterCap.addConstraint("9999");
+    registerProperty(preFilterCap);
+    minDisparity.addConstraint("0");
+    minDisparity.addConstraint("9999");
+    registerProperty(minDisparity);
+    disp12MaxDiff.addConstraint("0");
+    disp12MaxDiff.addConstraint("9999");
+    registerProperty(disp12MaxDiff);
+    speckleRange.addConstraint("0");
+    speckleRange.addConstraint("9999");
+    registerProperty(speckleRange);
+    speckleWindowSize.addConstraint("0");
+    speckleWindowSize.addConstraint("9999");
+    registerProperty(speckleWindowSize);
+    uniquenessRatio.addConstraint("0");
+    uniquenessRatio.addConstraint("100");
+    registerProperty(uniquenessRatio);
+    textureThreshold.addConstraint("0");
+    textureThreshold.addConstraint("9999");
+    registerProperty(textureThreshold);
 }
 
 DepthProcessor::~DepthProcessor() {
@@ -85,22 +122,14 @@ void DepthProcessor::CalculateDepthMap() {
 	Types::CameraInfo oRightCamInfo(r_in_cam_info.read());
 
 	LOG(LINFO) << "Create bunch of fresh cv::Mat objects";
-	cv::StereoVar var;
     cv::Rect roi1, roi2;
+    //Reprojection matix - Q
     cv::Mat Q;
-    cv::Mat R, T, R1, P1, R2, P2;
+    //Rectification and projection matrices - R* and P*
+    cv::Mat R1, P1, R2, P2;
+
+    //Size of input image
     cv::Size img_size = oLeftImage.size();
-
-    cv::FileStorage fs("/home/dkaczmar/stereo/extrisinc.yml", cv::FileStorage::READ);
-
-    //fs["R1"] >> R1;
-    //fs["R2"] >> R2;
-    //fs["P1"] >> P1;
-    //fs["P2"] >> P2;
-    fs["R"] >> R;
-    fs["T"] >> T;
-
-    fs.release();
 
     // Camera matrices
     cv::Mat M1 = oLeftCamInfo.cameraMatrix();
@@ -110,6 +139,10 @@ void DepthProcessor::CalculateDepthMap() {
     cv::Mat D1 = oLeftCamInfo.distCoeffs();
     cv::Mat D2 = oRightCamInfo.distCoeffs();
 
+    //Rotation and translation of second camera to the first
+    cv::Mat R = oRightCamInfo.rotationMatrix();
+    cv::Mat T = oRightCamInfo.translationMatrix();
+
 
     LOG(LINFO) << "M1 "<< M1;
     LOG(LINFO) << "M2 "<< M2;
@@ -117,13 +150,14 @@ void DepthProcessor::CalculateDepthMap() {
     LOG(LINFO) << "D2 "<< D2;
     LOG(LINFO) << "Size " << img_size.height << "x"<<img_size.width;
 
-    LOG(LINFO) << R1;
-    LOG(LINFO) << P1;
-    LOG(LINFO) << R2;
-    LOG(LINFO) << P2;
-
-
     cv::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
+
+
+
+    LOG(LINFO) << "R1 "<< R1;
+    LOG(LINFO) << "P1 "<< P1;
+    LOG(LINFO) << "R2 "<< R2;
+    LOG(LINFO) << "P2 "<< P2;
 
     cv::Mat map11, map12, map21, map22;
 
@@ -144,30 +178,30 @@ void DepthProcessor::CalculateDepthMap() {
 
     bm->state->roi1 = roi1;
     bm->state->roi2 = roi2;
-    bm->state->preFilterCap = 31;
-    bm->state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 9;
-    bm->state->minDisparity = 0;
+    bm->state->preFilterCap = preFilterCap;
+    bm->state->SADWindowSize = SADWindowSize;
+    bm->state->minDisparity = minDisparity;
     bm->state->numberOfDisparities = numberOfDisparities;
-    bm->state->textureThreshold = 10;
-    bm->state->uniquenessRatio = 15;
-    bm->state->speckleWindowSize = 100;
-    bm->state->speckleRange = 32;
-    bm->state->disp12MaxDiff = 1;
+    bm->state->textureThreshold = textureThreshold;
+    bm->state->uniquenessRatio = uniquenessRatio;
+    bm->state->speckleWindowSize = speckleWindowSize;
+    bm->state->speckleRange = speckleRange;
+    bm->state->disp12MaxDiff = disp12MaxDiff;
 
-    sgbm->preFilterCap = 63;
-    sgbm->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
 
     int cn = oLeftImage.channels();
 
+    sgbm->preFilterCap = preFilterCap;
+    sgbm->SADWindowSize = SADWindowSize;
     sgbm->P1 = 8*cn*sgbm->SADWindowSize*sgbm->SADWindowSize;
     sgbm->P2 = 32*cn*sgbm->SADWindowSize*sgbm->SADWindowSize;
-    sgbm->minDisparity = 0;
+    sgbm->minDisparity = minDisparity;
     sgbm->numberOfDisparities = numberOfDisparities;
-    sgbm->uniquenessRatio = 10;
-    sgbm->speckleWindowSize = bm->state->speckleWindowSize;
-    sgbm->speckleRange = bm->state->speckleRange;
-    sgbm->disp12MaxDiff = 1;
-    sgbm->fullDP = ( algorythm_type == STEREO_BM );
+    sgbm->uniquenessRatio = uniquenessRatio;
+    sgbm->speckleWindowSize = speckleWindowSize;
+    sgbm->speckleRange = speckleRange;
+    sgbm->disp12MaxDiff = disp12MaxDiff;
+    sgbm->fullDP = ( algorythm_type == STEREO_HH );
 
     cv::Mat disp, disp8;
 
@@ -175,9 +209,9 @@ void DepthProcessor::CalculateDepthMap() {
     int64 t = cv::getTickCount();
     if( algorythm_type == STEREO_BM )
         bm->operator ()(oLeftRectified, oRightRectified, disp);
-    else if( algorythm_type == STEREO_VAR ) {
-        var(oLeftRectified, oRightRectified, disp);
-    }
+//    else if( algorythm_type == STEREO_VAR ) {
+//        var(oLeftRectified, oRightRectified, disp);
+//    }
     else if( algorythm_type == STEREO_SGBM || algorythm_type == STEREO_HH )
         sgbm->operator ()(oLeftRectified, oRightRectified, disp);
     t = cv::getTickCount() - t;
@@ -186,10 +220,11 @@ void DepthProcessor::CalculateDepthMap() {
 
     //disp = dispp.colRange(numberOfDisparities, img1p.cols);
     LOG(LINFO) << "Converting disparity to depth image";
-    if( algorythm_type != STEREO_VAR )
-        disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
-    else
-        disp.convertTo(disp8, CV_8U);
+    disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
+//    if( algorythm_type != STEREO_VAR )
+//        disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
+//    else
+//        disp.convertTo(disp8, CV_8U);
 
     //LOG(LINFO) << "Calculate Q transform matrix";
     //generateQ(P1,P2, Q);
@@ -197,7 +232,7 @@ void DepthProcessor::CalculateDepthMap() {
     LOG(LINFO) << "Generating depth point cloud";
     cv::Mat xyz;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
-    reprojectImageTo3D(disp, xyz, Q, true);
+    reprojectImageTo3D(disp8, xyz, Q, true);
     const double max_z = 1.0e4;
     for(int y = 0; y < xyz.rows; y++)
     {
@@ -206,7 +241,7 @@ void DepthProcessor::CalculateDepthMap() {
             cv::Vec3f point = xyz.at<cv::Vec3f>(y, x);
             if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
             //fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
-            pcl::PointXYZ point1(point[0], point[1], point[2]);
+            pcl::PointXYZ point1(point[0], point[1], -point[2]);
             cloud->push_back(point1);
         }
     }
