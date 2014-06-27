@@ -19,7 +19,7 @@ namespace DepthProcessor {
 
 DepthProcessor::DepthProcessor(const std::string & name) :
 		Base::Component(name),
-        numberOfDisparities("numberOfDisparities (divisible by 16)", int(0)),
+        numberOfDisparities("numberOfDisparities", int(0)),
         SADWindowSize("SADWindowSize (MUST BE ODD >= 1)", int(5)),
         preFilterCap("preFilterCap", int(63)),
         minDisparity("minDisparity", int(0)),
@@ -37,6 +37,7 @@ DepthProcessor::DepthProcessor(const std::string & name) :
     registerProperty(algorythm_type);
     numberOfDisparities.addConstraint("1");
     numberOfDisparities.addConstraint("9999");
+    numberOfDisparities.setToolTip("dupa");
     registerProperty(numberOfDisparities);
     SADWindowSize.addConstraint("1");
     SADWindowSize.addConstraint("9999");
@@ -78,7 +79,7 @@ void DepthProcessor::prepareInterface() {
 	registerStream("out_depth_map", &out_depth_map);
 	registerStream("out_left", &out_left_dispared);
     registerStream("out_right", &out_right_dispared);
-    registerStream("out_cloud_xyz", &out_cloud_xyz);
+    registerStream("out_cloud_xyzrgb", &out_cloud_xyzrgb);
 
 	// Register handlers
 	h_CalculateDepthMap.setup(boost::bind(&DepthProcessor::CalculateDepthMap, this));
@@ -231,26 +232,43 @@ void DepthProcessor::CalculateDepthMap() {
 
     LOG(LINFO) << "Generating depth point cloud";
     cv::Mat xyz;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+    uint32_t pr, pg, pb;
     reprojectImageTo3D(disp8, xyz, Q, true);
     const double max_z = 1.0e4;
     for(int y = 0; y < xyz.rows; y++)
     {
+        uchar* rgb_ptr = oLeftRectified.ptr<uchar>(y);
         for(int x = 0; x < xyz.cols; x++)
         {
             cv::Vec3f point = xyz.at<cv::Vec3f>(y, x);
+            //cv::Vec3f rgbVal = oLeftRectified.at<cv::Vec3f>(y, x);
             if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
-            //fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
-            pcl::PointXYZ point1(point[0], point[1], -point[2]);
+
+
+            //Get RGB info
+            pb = rgb_ptr[3*x];
+            pg = rgb_ptr[3*x+1];
+            pr = rgb_ptr[3*x+2];
+
+            //Insert info into point cloud structure
+            pcl::PointXYZRGB point1;
+            point1.x = point[0];
+            point1.y = point[1];
+            point1.z = -point[2];
+            uint32_t rgb = (static_cast<uint32_t>(pr) << 16 | static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+            //uint8_t r = 255, g = 0, b = 0; // Example: Red color
+            //uint32_t rgb = ((uint32_t)pr << 16 | (uint32_t)pg << 8 | (uint32_t)pb);
+            point1.rgb = *reinterpret_cast<float*>(&rgb);
             cloud->push_back(point1);
         }
     }
 
     LOG(LINFO) << "Writing to data stream";
-	out_depth_map.write(disp8);
-	out_left_dispared.write(oLeftRectified);
-	out_right_dispared.write(oRightRectified);
-    out_cloud_xyz.write(cloud);
+    out_depth_map.write(disp8);
+    out_left_dispared.write(oLeftRectified);
+    out_right_dispared.write(oRightRectified);
+    out_cloud_xyzrgb.write(cloud);
 	} catch (...)
 	{
 		LOG(LERROR) << "Error occured in processing input";

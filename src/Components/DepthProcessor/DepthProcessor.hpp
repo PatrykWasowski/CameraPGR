@@ -91,7 +91,7 @@ protected:
 	Base::DataStreamOut<cv::Mat> out_depth_map;
 	Base::DataStreamOut<cv::Mat> out_left_dispared;
     Base::DataStreamOut<cv::Mat> out_right_dispared;
-    Base::DataStreamOut<pcl::PointCloud<pcl::PointXYZ>::Ptr > out_cloud_xyz;
+    Base::DataStreamOut<pcl::PointCloud<pcl::PointXYZRGB>::Ptr > out_cloud_xyzrgb;
 
 	// Properties
 	Base::Property<string> algorythm_type;
