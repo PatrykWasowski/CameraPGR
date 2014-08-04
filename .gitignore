@@ -1,2 +1,8 @@
 build
 dist
+*CMAKE*
+*CMake*
+*.cmake
+*.so
+*~
+*Makefile

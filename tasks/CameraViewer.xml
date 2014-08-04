@@ -19,7 +19,7 @@
 				<Component name="Source" type="CameraPGR:CameraPGR" priority="1" bump="0">
 					<!--<param name="device">1</param>-->
 					<param name="camera_serial">13481977</param>
-					<param name="fps">10</param>
+					<!--<param name="fps">10</param>-->
 				</Component>
 			</Executor>
 		</Subtask>

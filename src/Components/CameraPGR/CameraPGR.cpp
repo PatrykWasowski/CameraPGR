@@ -119,7 +119,7 @@ namespace CameraPGR {
 			registerStream("out_img", &out_img);
 			registerStream("out_info", &out_info);
 			// Register handlers
-			h_onConfigChanged.setup(boost::bind(&CameraPGR_Source::onShutterTimeChanged, this));
+			h_onConfigChanged.setup(boost::bind(&CameraPGR_Source::onConfigChanged, this));
 			registerHandler("onConfigChanged", &h_onConfigChanged);
 			addDependency("onConfigChanged", &configChange);
 
@@ -142,7 +142,7 @@ namespace CameraPGR {
 			error = cam.Connect(&guid);
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
-				//LOG(LERROR) <<  error;
+				LOG(LERROR) << "connect niet ";// << (int) error;
 				//return -1;
 			}
 
@@ -151,7 +151,7 @@ namespace CameraPGR {
 			error = cam.GetCameraInfo(&camInfo);
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
-				//LOG(LERROR) << error;
+				LOG(LERROR) << "cameraInfo niet ";//<< (int) error;
 				//return -1;
 			}
 
@@ -159,7 +159,7 @@ namespace CameraPGR {
 			error = cam.GetGigEImageSettingsInfo( &imageSettingsInfo );
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
-				//LOG(LERROR) << error;
+				LOG(LERROR) << "getGigEImageSettingsInfo niet ";// << (int) error;
 				//return -1;
 			}
 
@@ -178,7 +178,7 @@ namespace CameraPGR {
 			error = cam.SetGigEImageSettings( &imageSettings );
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
-				//LOG(LERROR) << error;
+				LOG(LERROR) << "setGigEImageSettings niet ";// << (int) error;
 				//return -1;
 			}
 
@@ -186,7 +186,7 @@ namespace CameraPGR {
 			error = cam.StartCapture();
 			if (error != FlyCapture2::PGRERROR_OK)
 			{
-				//LOG(LERROR) << error;
+				LOG(LERROR) << "startCapture niet ";//<< (int) error;
 				//return -1;
 			}
 			ok = true;
@@ -273,7 +273,7 @@ namespace CameraPGR {
 			FlyCapture2::Error error;
 			unsigned int pair_id = 0;
 			//setting camera properties
-			configure("properties");
+			configure();
 			while (ok) {
 				while(!changing)
 				{
@@ -321,11 +321,10 @@ namespace CameraPGR {
 					 sendInfo(image, capture_time);*/
 				 }
 			 }
-			}
 		}
 
 		void CameraPGR_Source::onConfigChanged() {
-			Config config = configChange.read()
+			Config config = configChange.read();
 			brightness_mode = config.brightness_mode;
 			brightness_value = config.brightness_value;
 			auto_exposure_mode = config.auto_exposure_mode;
