@@ -37,6 +37,8 @@ namespace CameraPGR {
 		pixel_format("pixel_format", string("RGB")),
 		width("width", 1296), //need to rework
 		height("height", 1032),
+		offsetX("offsetX", 0),
+		offsetY("offsetY", 0),
 		brightness_mode("brightness_mode", string("previous")),
 		brightness_value("brightness_value", -1),
 		auto_exposure_mode("auto_exposure_mode", string("previous")),
@@ -100,6 +102,8 @@ namespace CameraPGR {
 			registerProperty(camera_url);
 			registerProperty(camera_serial);
 			registerProperty(pixel_format);
+			registerProperty(offsetX);
+			registerProperty(offsetY);
 			
 			changing = false;
 		}
@@ -164,8 +168,8 @@ namespace CameraPGR {
 			}
 
 			FlyCapture2::GigEImageSettings imageSettings;
-			imageSettings.offsetX = 0;
-			imageSettings.offsetY = 0;
+			imageSettings.offsetX = offsetX;
+			imageSettings.offsetY = offsetY;
 			imageSettings.height = height;
 			imageSettings.width = width;
 			if(pixel_format == "RAW")

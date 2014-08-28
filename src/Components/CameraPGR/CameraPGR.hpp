@@ -94,6 +94,8 @@ protected:
 	Base::Property<string> pixel_format;
 	Base::Property<int> width;
 	Base::Property<int> height;
+	Base::Property<int> offsetX;
+	Base::Property<int> offsetY;
 	
 	/* Camera properties:
 		 * BRIGHTNESS
@@ -136,7 +138,7 @@ protected:
 	Base::Property<string> shutter_mode;
 	Base::Property<float> shutter_value;
 	Base::Property<string> gain_mode;
-	Base::Property<int> gain_value;
+	Base::Property<float> gain_value;
 
 	void sendCameraInfo();
 	// Handlers
