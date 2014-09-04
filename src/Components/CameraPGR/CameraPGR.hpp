@@ -121,7 +121,7 @@ protected:
 		 * */
 	Base::Property<string> brightness_mode;
 	Base::Property<float> brightness_value;
-	Base::Property<string> auto_exposure_mode;
+    Base::Property<string> exposure_mode;
 	Base::Property<float> exposure_value;
 	Base::Property<string> sharpness_mode;
 	Base::Property<float> sharpness_value;

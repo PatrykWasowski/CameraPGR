@@ -41,7 +41,7 @@ namespace CameraPGR {
 		offsetY("offsetY", 0),
 		brightness_mode("brightness_mode", string("previous")),
 		brightness_value("brightness_value", -1),
-		auto_exposure_mode("auto_exposure_mode", string("previous")),
+        exposure_mode("exposure_mode", string("previous")),
 		exposure_value("exposure_value", -1),
 		sharpness_mode("sharpness_mode", string("previous")),
 		sharpness_value("sharpness_value", -1),
