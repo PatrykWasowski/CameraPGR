@@ -85,7 +85,7 @@ namespace CameraPGR {
 			registerProperty(height);
 			registerProperty(brightness_mode);
 			registerProperty(brightness_value);
-			registerProperty(auto_exposure_mode);
+			registerProperty(exposure_mode);
 			registerProperty(exposure_value);
 			registerProperty(hue_mode);
 			registerProperty(hue_value);
@@ -331,7 +331,7 @@ namespace CameraPGR {
 			Config config = configChange.read();
 			brightness_mode = config.brightness_mode;
 			brightness_value = config.brightness_value;
-			auto_exposure_mode = config.auto_exposure_mode;
+			exposure_mode = config.exposure_mode;
 			exposure_value = config.exposure_value;
 			sharpness_mode = config.sharpness_mode;
 			sharpness_value = config.sharpness_value;
@@ -377,19 +377,19 @@ namespace CameraPGR {
 					cam.SetProperty(&prop);
 				}
 				
-				if(auto_exposure_mode != "previous")
+				if(exposure_mode != "previous")
 				{
 					
 					prop.type = FlyCapture2::AUTO_EXPOSURE;
 					prop.onOff = true;
-					if(auto_exposure_mode == "auto")
+					if(exposure_mode == "auto")
 						prop.autoManualMode = true;
-					else if(auto_exposure_mode == "onepush")
+					else if(exposure_mode == "onepush")
 					{
 						prop.autoManualMode = false;
 						prop.onePush = true;
 					}
-					else if(auto_exposure_mode == "manual" && (int) exposure_value != -1)
+					else if(exposure_mode == "manual" && (int) exposure_value != -1)
 					{
 						prop.autoManualMode = false;
 						prop.absControl = true;

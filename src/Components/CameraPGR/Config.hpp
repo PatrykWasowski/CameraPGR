@@ -5,7 +5,7 @@ class Config {
 public:
 	string brightness_mode;
 	float brightness_value;
-	string auto_exposure_mode;
+	string exposure_mode;
 	float exposure_value;
 	string sharpness_mode;
 	float sharpness_value;
@@ -27,7 +27,7 @@ public:
 	Config() {
 		brightness_mode = "previous";
 		brightness_value = -1;
-		auto_exposure_mode = "previous";
+		exposure_mode = "previous";
 		exposure_value = -1;
 		sharpness_mode = "previous";
 		sharpness_value = -1;
