@@ -78,6 +78,7 @@ protected:
 
 	void captureAndSendImages();
 	void configure();
+	void sendConfigInfo();
 
 	// Input data streams
 	Base::DataStreamIn<Config> configChange;
@@ -142,7 +143,7 @@ protected:
 
 	void sendCameraInfo();
 	// Handlers
-	void onConfigChanged();
+	void onNewConfig();
 
 private:
 	bool ok;
