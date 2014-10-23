@@ -1,6 +1,8 @@
 #ifndef CONFIG_HPP_
 #define CONFIG_HPP_
-
+namespace Sources {
+namespace CameraPGR {
+	
 class Config {
 public:
 	string brightness_mode;
@@ -49,4 +51,6 @@ public:
 	
 };
 
+}
+}
 #endif
