@@ -1,0 +1,74 @@
+
+<Task>
+	<!-- reference task information -->
+	<Reference>
+		<Author>
+			<name>Aleksandra Karbarczyk</name>
+			<link></link>
+		</Author>
+		
+		<Description>
+			<brief></brief>
+			<full></full>	
+		</Description>
+	</Reference>
+	
+	<!-- task definition -->
+	<Subtasks>
+		<Subtask name="Processing">
+			<Executor name="Exec1" period="0.1">
+				
+				<Component name="Source" type="CameraPGR:CameraPGR" priority="1" bump="0">
+					<param name="camera_serial">13481977</param>
+					<param name="width">1296</param>
+					<param name="height">1032</param>
+					<param name="shutter_mode">manual</param>
+					<param name="shutter_value">80</param>
+					<param name="gain_mode">manual</param>
+					<param name="gain_value">2</param>
+					<param name="frame_rate_value">10</param>
+					<param name="frame_rate_mode">manual</param>
+				</Component>
+				
+				<Component name="CameraInfo" type="CvCoreTypes:CameraInfoProvider" priority="2">
+					<param name="width">1296</param>
+					<param name="height">1032</param>
+					<param name="camera_matrix">1052.974150 0 646.343139 ; 0 1048.529819 506.165068 ; 0 0 1</param>
+					<param name="dist_coeffs">-0.405033 0.189376 0.000262 0.000465 0.000000</param>
+				</Component>
+				
+				<Component name="Undistort" type="CvBasic:CvUndistort" priority="3" bump="0">
+				</Component>
+				
+			</Executor>
+		</Subtask>
+		
+		<Subtask name="Visualisation">
+			<Executor name="Exec2" period="0.2">
+				<Component name="Window" type="CvBasic:CvWindow" priority="4" bump="0">
+					<param name="count">2</param>
+					<param name="title">Original,Result</param>
+				</Component>
+			</Executor>
+		</Subtask>	
+	
+	</Subtasks>
+	
+	<!-- pipes connecting datastreams -->
+	<DataStreams>
+		<Source name="Source.out_img">	
+			<sink>Undistort.in_img</sink>
+			<sink>Window.in_img0</sink>
+		</Source>
+		<Source name="CameraInfo.out_camera_info">
+			<sink>Undistort.in_camera_info</sink>
+		</Source>
+		<Source name="Undistort.out_img">
+			<sink>Window.in_img1</sink>
+		</Source>
+	</DataStreams>
+</Task>
+
+
+
+

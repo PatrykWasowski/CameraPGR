@@ -1,0 +1,20 @@
+Hello,
+
+For the time being this component can be configured in more-or-less-real time ONLY using discode_gui. 
+If you wish to send configuration changes from other components you should uncomment code in the 'onNewConfig' method.
+
+ALSO: currently image acquisition is asynchronous, meaning the executor containing this component should be running with the same or bigger frequency as the camera.
+TL;DR: for 10 FPS set period to 0.1.
+
+It is advisable to set key parameters in the task's definition file.
+Those properties are:
+width
+height
+gain_mode
+gain_value
+shutter_mode
+shutter_value
+frame_rate_mode
+frame_rate_value
+
+If you're not sure what the proper values are you should check in Flycapture ('flycap' in terminal).

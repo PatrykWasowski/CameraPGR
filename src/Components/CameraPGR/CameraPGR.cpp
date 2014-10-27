@@ -336,8 +336,8 @@ namespace CameraPGR {
 		}
 
 		void CameraPGR_Source::onNewConfig() {
+			/* This should be uncommented if you want to automatically modify camera's configuration from other software
 			CameraPGR::Config config = configChange.read();
-			//configChange.read(); ??
 			brightness_mode = config.brightness_mode;
 			brightness_value = config.brightness_value;
 			exposure_mode = config.exposure_mode;
@@ -358,7 +358,9 @@ namespace CameraPGR {
 			shutter_value = config.shutter_value;
 			gain_mode = config.gain_mode;
 			gain_value = config.gain_value;
+			*/
 			
+			//Above code should be commented if you want to modify camera's configuration using discode_gui
 			configure();
 		}
 		
