@@ -24,8 +24,6 @@
 #include <BusManager.h>
 #include <Image.h>
 
-
-
 namespace Sources {
 namespace CameraPGR {
 
